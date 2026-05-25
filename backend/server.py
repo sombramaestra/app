@@ -419,6 +419,20 @@ async def get_photo_image(photo_id: str):
     data, content_type = get_object(photo["storage_path"])
     return Response(content=data, media_type=content_type)
 
+@api_router.delete("/photos/{photo_id}")
+async def delete_photo(photo_id: str, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.photos.update_one(
+        {"id": photo_id, "is_deleted": False},
+        {"$set": {"is_deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    
+    return {"message": "Photo deleted successfully"}
+
 # Categories endpoints
 @api_router.get("/categories", response_model=List[CategoryResponse])
 async def get_categories():
@@ -465,6 +479,17 @@ async def get_orders(user: dict = Depends(get_current_user)):
     
     orders = await db.orders.find({}, {"_id": 0}).to_list(1000)
     return [OrderResponse(**order) for order in orders]
+
+@api_router.delete("/orders/{order_id}")
+async def delete_order(order_id: str, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.orders.delete_one({"id": order_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    return {"message": "Order deleted successfully"}
 
 # Contact endpoint
 @api_router.post("/contact")

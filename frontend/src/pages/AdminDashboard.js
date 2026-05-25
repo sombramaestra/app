@@ -3,8 +3,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Upload, Package, Image as ImageIcon } from 'lucide-react';
+import { Upload, Package, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../components/ui/alert-dialog';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -66,6 +77,26 @@ const AdminDashboard = () => {
       setPhotos(data);
     } catch (error) {
       console.error('Error fetching photos:', error);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId) => {
+    try {
+      await axios.delete(`${API}/photos/${photoId}`, { withCredentials: true });
+      toast.success('Fotografía eliminada');
+      fetchPhotos();
+    } catch (error) {
+      toast.error('Error al eliminar la fotografía');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      await axios.delete(`${API}/orders/${orderId}`, { withCredentials: true });
+      toast.success('Pedido eliminado');
+      fetchOrders();
+    } catch (error) {
+      toast.error('Error al eliminar el pedido');
     }
   };
 
@@ -362,7 +393,38 @@ const AdminDashboard = () => {
                         <h3 className="font-medium text-lg">Pedido #{order.order_number}</h3>
                         <p className="text-sm text-[#AFA8B3]">{new Date(order.created_at).toLocaleDateString()}</p>
                       </div>
-                      <span className="text-[#9C6AB0] font-medium text-lg">{order.total.toFixed(2)}€</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#9C6AB0] font-medium text-lg">{order.total.toFixed(2)}€</span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              className="text-[#AFA8B3] hover:text-red-400 transition-colors p-2"
+                              data-testid={`delete-order-${order.id}`}
+                              aria-label="Eliminar pedido"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-[#1A171D] border-[#2C2631] text-[#F8F7F9]">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar este pedido?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-[#AFA8B3]">
+                                Esta acción no se puede deshacer. Se eliminará el pedido <strong>{order.order_number}</strong> permanentemente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="bg-[#252129] border-[#2C2631] text-[#F8F7F9] hover:bg-[#2C2631]">Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteOrder(order.id)}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                data-testid={`confirm-delete-order-${order.id}`}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
                       <p><span className="text-[#AFA8B3]">Cliente:</span> {order.customer_name}</p>
@@ -396,15 +458,47 @@ const AdminDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {photos.map((photo) => (
-                  <div key={photo.id} className="bg-[#1A171D] border border-white/5" data-testid={`photo-${photo.id}`}>
+                  <div key={photo.id} className="bg-[#1A171D] border border-white/5 relative group" data-testid={`photo-${photo.id}`}>
                     <img
                       src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
                       alt={photo.title}
                       className="w-full h-48 object-cover"
                     />
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-2 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                          data-testid={`delete-photo-${photo.id}`}
+                          aria-label="Eliminar fotografía"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-[#1A171D] border-[#2C2631] text-[#F8F7F9]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar esta fotografía?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-[#AFA8B3]">
+                            Esta acción no se puede deshacer. La fotografía <strong>{photo.title}</strong> dejará de aparecer en la galería.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="bg-[#252129] border-[#2C2631] text-[#F8F7F9] hover:bg-[#2C2631]">Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeletePhoto(photo.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            data-testid={`confirm-delete-photo-${photo.id}`}
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <div className="p-4">
                       <h3 className="font-medium mb-1">{photo.title}</h3>
-                      <p className="text-xs text-[#AFA8B3] mb-2">{photo.category}</p>
+                      <p className="text-xs text-[#AFA8B3] mb-2">
+                        {photo.category}
+                        {photo.hermandad && ` · ${photo.hermandad}`}
+                      </p>
                       <div className="text-xs text-[#9C6AB0]">
                         Digital: {photo.price_digital}€ | Físico: {photo.price_physical}€
                       </div>
