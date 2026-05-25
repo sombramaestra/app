@@ -56,20 +56,30 @@ const Contact = () => {
               <div className="flex items-start gap-4">
                 <Mail className="text-[#9C6AB0] mt-1" size={24} />
                 <div>
-                  <h3 className="font-medium mb-1">Email</h3>
-                  <a href="mailto:info@pasioncofrade.com" className="text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
-                    info@pasioncofrade.com
-                  </a>
+                  <h3 className="font-medium mb-2">Email</h3>
+                  <div className="space-y-1">
+                    <a href="mailto:gonzalolaramacias@gmail.com" className="block text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                      gonzalolaramacias@gmail.com <span className="text-xs text-[#9C6AB0]">(Gonzalo)</span>
+                    </a>
+                    <a href="mailto:manuelgfotos@gmail.com" className="block text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                      manuelgfotos@gmail.com <span className="text-xs text-[#9C6AB0]">(Manuel)</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
                 <Phone className="text-[#9C6AB0] mt-1" size={24} />
                 <div>
-                  <h3 className="font-medium mb-1">Teléfono</h3>
-                  <a href="tel:+34600000000" className="text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
-                    +34 600 000 000
-                  </a>
+                  <h3 className="font-medium mb-2">Teléfono</h3>
+                  <div className="space-y-1">
+                    <a href="tel:+34622242137" className="block text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                      622 242 137 <span className="text-xs text-[#9C6AB0]">(Gonzalo)</span>
+                    </a>
+                    <a href="tel:+34687836768" className="block text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                      687 836 768 <span className="text-xs text-[#9C6AB0]">(Manuel)</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 

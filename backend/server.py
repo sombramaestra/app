@@ -468,7 +468,8 @@ Información sobre contratos y servicios:
 - Cobertura de eventos cofrades y Semana Santa
 - Fotografía profesional de hermandades
 - Contratación de servicios personalizados disponibles
-- Contacto: Gonzalo Lara (@gonzalo_0702) y Manuel Gómez (@_manugfotos)
+- Contacto Gonzalo Lara: Instagram @gonzalo_0702, Email gonzalolaramacias@gmail.com, Teléfono 622 242 137
+- Contacto Manuel Gómez: Instagram @_manugfotos, Email manuelgfotos@gmail.com, Teléfono 687 836 768
 - Los pagos se realizan mediante Bizum o efectivo
 
 Responde de manera amable, profesional y cercana. Siempre en español."""

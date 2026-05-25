@@ -45,13 +45,21 @@ const Footer = () => {
           <div>
             <h4 className="text-xs tracking-[0.2em] uppercase text-[#9C6AB0] mb-4">Contacto</h4>
             <div className="space-y-3">
-              <a href="mailto:info@pasioncofrade.com" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+              <a href="mailto:gonzalolaramacias@gmail.com" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
                 <Mail size={20} />
-                <span>info@pasioncofrade.com</span>
+                <span>gonzalolaramacias@gmail.com</span>
               </a>
-              <a href="tel:+34600000000" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+              <a href="mailto:manuelgfotos@gmail.com" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                <Mail size={20} />
+                <span>manuelgfotos@gmail.com</span>
+              </a>
+              <a href="tel:+34622242137" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
                 <Phone size={20} />
-                <span>+34 600 000 000</span>
+                <span>622 242 137 (Gonzalo)</span>
+              </a>
+              <a href="tel:+34687836768" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                <Phone size={20} />
+                <span>687 836 768 (Manuel)</span>
               </a>
             </div>
           </div>

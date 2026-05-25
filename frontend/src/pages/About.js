@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram, Camera } from 'lucide-react';
+import { Instagram, Camera, Mail, Phone } from 'lucide-react';
 
 const About = () => {
   return (
@@ -76,16 +76,34 @@ const About = () => {
               <p className="text-base leading-relaxed text-[#AFA8B3] mb-6">
                 Fotógrafo especializado en Semana Santa de Sevilla y sus pueblos. Capturando la esencia de la devoción cofrade desde hace más de 10 años.
               </p>
-              <a
-                href="https://instagram.com/gonzalo_0702"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[#9C6AB0] hover:text-[#F8F7F9] transition-colors duration-200"
-                data-testid="gonzalo-instagram"
-              >
-                <Instagram size={20} />
-                <span>@gonzalo_0702</span>
-              </a>
+              <div className="space-y-3">
+                <a
+                  href="https://instagram.com/gonzalo_0702"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[#9C6AB0] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="gonzalo-instagram"
+                >
+                  <Instagram size={18} />
+                  <span>@gonzalo_0702</span>
+                </a>
+                <a
+                  href="mailto:gonzalolaramacias@gmail.com"
+                  className="flex items-center gap-2 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="gonzalo-email"
+                >
+                  <Mail size={18} />
+                  <span>gonzalolaramacias@gmail.com</span>
+                </a>
+                <a
+                  href="tel:+34622242137"
+                  className="flex items-center gap-2 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="gonzalo-phone"
+                >
+                  <Phone size={18} />
+                  <span>622 242 137</span>
+                </a>
+              </div>
             </div>
 
             <div className="bg-[#1A171D] border border-white/5 p-8" data-testid="photographer-card-manuel">
@@ -93,16 +111,34 @@ const About = () => {
               <p className="text-base leading-relaxed text-[#AFA8B3] mb-6">
                 Fotógrafo cofrade con gran experiencia en eventos religiosos y procesiones. Su trabajo refleja la pasión por las tradiciones andaluzas.
               </p>
-              <a
-                href="https://instagram.com/_manugfotos"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[#9C6AB0] hover:text-[#F8F7F9] transition-colors duration-200"
-                data-testid="manuel-instagram"
-              >
-                <Instagram size={20} />
-                <span>@_manugfotos</span>
-              </a>
+              <div className="space-y-3">
+                <a
+                  href="https://instagram.com/_manugfotos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[#9C6AB0] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="manuel-instagram"
+                >
+                  <Instagram size={18} />
+                  <span>@_manugfotos</span>
+                </a>
+                <a
+                  href="mailto:manuelgfotos@gmail.com"
+                  className="flex items-center gap-2 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="manuel-email"
+                >
+                  <Mail size={18} />
+                  <span>manuelgfotos@gmail.com</span>
+                </a>
+                <a
+                  href="tel:+34687836768"
+                  className="flex items-center gap-2 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+                  data-testid="manuel-phone"
+                >
+                  <Phone size={18} />
+                  <span>687 836 768</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
