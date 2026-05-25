@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Checkout = () => {
   const { cartItems, getTotal, clearCart } = useCart();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -19,6 +21,25 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+
+  // Pre-fill form when user is loaded
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        customer_name: prev.customer_name || user.name || '',
+        customer_email: prev.customer_email || user.email || '',
+      }));
+    }
+  }, [user]);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user && cartItems.length > 0 && !orderComplete) {
+      toast.info('Inicia sesión para continuar con la compra');
+      navigate('/login');
+    }
+  }, [authLoading, user, cartItems.length, orderComplete, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,13 +64,18 @@ const Checkout = () => {
     };
 
     try {
-      const { data } = await axios.post(`${API}/orders`, orderData);
+      const { data } = await axios.post(`${API}/orders`, orderData, { withCredentials: true });
       setOrderNumber(data.order_number);
       setOrderComplete(true);
       clearCart();
       toast.success('¡Pedido realizado con éxito!');
     } catch (error) {
-      toast.error('Error al procesar el pedido. Inténtalo de nuevo.');
+      if (error.response?.status === 401) {
+        toast.error('Debes iniciar sesión para realizar un pedido');
+        navigate('/login');
+      } else {
+        toast.error('Error al procesar el pedido. Inténtalo de nuevo.');
+      }
     } finally {
       setLoading(false);
     }

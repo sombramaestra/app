@@ -27,7 +27,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // CRITICAL: If returning from OAuth callback, skip the /me check.
+    // AuthCallback will exchange the session_id and establish the session first.
+    if (typeof window !== 'undefined' && window.location.hash?.includes('session_id=')) {
+      setLoading(false);
+      return;
+    }
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
@@ -49,7 +56,7 @@ export const AuthProvider = ({ children }) => {
         { withCredentials: true }
       );
       setUser(data);
-      return { success: true };
+      return { success: true, user: data };
     } catch (e) {
       return { success: false, error: formatApiErrorDetail(e.response?.data?.detail) || e.message };
     }
@@ -78,8 +85,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = () => {
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const redirectUrl = window.location.origin + '/perfil';
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
+
+  const processGoogleSession = async (sessionId) => {
+    try {
+      const { data } = await axios.post(
+        `${API}/auth/session`,
+        { session_id: sessionId },
+        {
+          withCredentials: true,
+          headers: { 'X-Session-ID': sessionId },
+        }
+      );
+      setUser(data);
+      return { success: true, user: data };
+    } catch (e) {
+      return { success: false, error: formatApiErrorDetail(e.response?.data?.detail) || e.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, checkAuth, googleLogin, processGoogleSession, setUser }}>
       {children}
     </AuthContext.Provider>
   );

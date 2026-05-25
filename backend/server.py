@@ -59,8 +59,35 @@ def create_refresh_token(user_id: str) -> str:
     payload = {"sub": user_id, "exp": datetime.now(timezone.utc) + timedelta(days=7), "type": "refresh"}
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
-# Auth Helper
+# Auth Helper - supports both JWT (admin) and session_token (Google users)
 async def get_current_user(request: Request) -> dict:
+    # 1. Try session_token (Google auth) first
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            potential_token = auth_header[7:]
+            # Check if this matches a session in DB
+            sess = await db.user_sessions.find_one({"session_token": potential_token})
+            if sess:
+                session_token = potential_token
+
+    if session_token:
+        sess = await db.user_sessions.find_one({"session_token": session_token})
+        if sess:
+            expires_at = sess.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at and expires_at < datetime.now(timezone.utc):
+                raise HTTPException(status_code=401, detail="Session expired")
+            user = await db.users.find_one({"user_id": sess["user_id"]}, {"_id": 0, "password_hash": 0})
+            if not user:
+                raise HTTPException(status_code=401, detail="User not found")
+            return user
+
+    # 2. Try JWT (admin)
     token = request.cookies.get("access_token")
     if not token:
         auth_header = request.headers.get("Authorization", "")
@@ -72,12 +99,9 @@ async def get_current_user(request: Request) -> dict:
         payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         if payload.get("type") != "access":
             raise HTTPException(status_code=401, detail="Invalid token type")
-        from bson import ObjectId
-        user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        user = await db.users.find_one({"user_id": payload["sub"]}, {"_id": 0, "password_hash": 0})
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
-        user["_id"] = str(user["_id"])
-        user.pop("password_hash", None)
         return user
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
@@ -128,6 +152,8 @@ class UserResponse(BaseModel):
     email: str
     name: str
     role: str
+    picture: Optional[str] = None
+    auth_provider: Optional[str] = "email"
 
 class PhotoCreate(BaseModel):
     title: str
@@ -199,19 +225,28 @@ async def seed_admin():
     if existing is None:
         hashed = hash_password(admin_password)
         await db.users.insert_one({
+            "user_id": f"admin_{uuid.uuid4().hex[:12]}",
             "email": admin_email,
             "password_hash": hashed,
             "name": "Admin",
             "role": "admin",
-            "created_at": datetime.now(timezone.utc)
+            "auth_provider": "email",
+            "created_at": datetime.now(timezone.utc).isoformat()
         })
         logging.info(f"Admin user created: {admin_email}")
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
-        )
-        logging.info("Admin password updated")
+    else:
+        # Ensure existing admin has user_id field
+        if not existing.get("user_id"):
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"user_id": f"admin_{uuid.uuid4().hex[:12]}", "auth_provider": "email"}}
+            )
+        if not verify_password(admin_password, existing["password_hash"]):
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password(admin_password)}}
+            )
+            logging.info("Admin password updated")
     
     # Write credentials to file
     os.makedirs("/app/memory", exist_ok=True)
@@ -250,17 +285,17 @@ async def register(input: RegisterRequest, response: Response):
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    from bson import ObjectId
-    user_id = str(ObjectId())
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
     hashed = hash_password(input.password)
     
     await db.users.insert_one({
-        "_id": ObjectId(user_id),
+        "user_id": user_id,
         "email": email,
         "password_hash": hashed,
         "name": input.name,
         "role": "user",
-        "created_at": datetime.now(timezone.utc)
+        "auth_provider": "email",
+        "created_at": datetime.now(timezone.utc).isoformat()
     })
     
     access_token = create_access_token(user_id, email)
@@ -269,33 +304,142 @@ async def register(input: RegisterRequest, response: Response):
     response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
     
-    return UserResponse(id=user_id, email=email, name=input.name, role="user")
+    return UserResponse(id=user_id, email=email, name=input.name, role="user", auth_provider="email")
 
 @api_router.post("/auth/login", response_model=UserResponse)
 async def login(input: LoginRequest, response: Response):
     email = input.email.lower()
     user = await db.users.find_one({"email": email})
-    if not user or not verify_password(input.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not user or not user.get("password_hash") or not verify_password(input.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    user_id = str(user["_id"])
+    user_id = user.get("user_id") or f"admin_{uuid.uuid4().hex[:12]}"
+    if not user.get("user_id"):
+        await db.users.update_one({"email": email}, {"$set": {"user_id": user_id}})
+    
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
     
     response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
     response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
     
-    return UserResponse(id=user_id, email=user["email"], name=user["name"], role=user["role"])
+    return UserResponse(
+        id=user_id,
+        email=user["email"],
+        name=user["name"],
+        role=user["role"],
+        auth_provider=user.get("auth_provider", "email")
+    )
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(user: dict = Depends(get_current_user)):
-    return UserResponse(id=user["_id"], email=user["email"], name=user["name"], role=user["role"])
+    return UserResponse(
+        id=user.get("user_id", ""),
+        email=user["email"],
+        name=user["name"],
+        role=user.get("role", "user"),
+        picture=user.get("picture"),
+        auth_provider=user.get("auth_provider", "email")
+    )
 
 @api_router.post("/auth/logout")
-async def logout(response: Response):
+async def logout(request: Request, response: Response):
+    # Delete session_token from DB if exists
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
     response.delete_cookie("access_token")
     response.delete_cookie("refresh_token")
+    response.delete_cookie("session_token", path="/")
     return {"message": "Logged out successfully"}
+
+# Google Auth - Exchange session_id for session_token
+@api_router.post("/auth/session")
+async def google_auth_session(request: Request, response: Response):
+    session_id = request.headers.get("X-Session-ID")
+    if not session_id:
+        body = await request.json() if request.headers.get("content-type", "").startswith("application/json") else {}
+        session_id = body.get("session_id")
+    
+    if not session_id:
+        raise HTTPException(status_code=400, detail="Missing session_id")
+    
+    # Call Emergent Auth to get user data
+    try:
+        resp = requests.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": session_id},
+            timeout=10
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logging.error(f"Emergent Auth error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid session_id")
+    
+    email = data["email"].lower()
+    name = data["name"]
+    picture = data.get("picture")
+    session_token = data["session_token"]
+    
+    # Find or create user
+    user = await db.users.find_one({"email": email})
+    if user:
+        user_id = user.get("user_id")
+        if not user_id:
+            user_id = f"user_{uuid.uuid4().hex[:12]}"
+        # Update picture and name (in case changed)
+        await db.users.update_one(
+            {"email": email},
+            {"$set": {
+                "user_id": user_id,
+                "name": name,
+                "picture": picture,
+                "auth_provider": user.get("auth_provider", "google"),
+            }}
+        )
+        role = user.get("role", "user")
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        await db.users.insert_one({
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "role": "user",
+            "auth_provider": "google",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        role = "user"
+    
+    # Create session
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at.isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Set cookie - secure=True and samesite="none" required for cross-site Emergent Auth flow
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=604800,
+        path="/"
+    )
+    
+    return UserResponse(
+        id=user_id,
+        email=email,
+        name=name,
+        role=role,
+        picture=picture,
+        auth_provider="google"
+    )
 
 # Photos endpoints
 @api_router.post("/photos", response_model=PhotoResponse)
@@ -510,7 +654,7 @@ async def create_category(name: str, slug: str, user: dict = Depends(get_current
 
 # Orders endpoints
 @api_router.post("/orders", response_model=OrderResponse)
-async def create_order(input: OrderCreate):
+async def create_order(input: OrderCreate, user: dict = Depends(get_current_user)):
     order_id = str(uuid.uuid4())
     order_number = f"PC{datetime.now().strftime('%Y%m%d')}{order_id[:8].upper()}"
     
@@ -524,19 +668,29 @@ async def create_order(input: OrderCreate):
         "payment_method": input.payment_method,
         "total": input.total,
         "status": "pending",
+        "user_id": user.get("user_id"),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
     await db.orders.insert_one(order_doc)
     
+    order_doc.pop("user_id", None)
     return OrderResponse(**order_doc)
+
+@api_router.get("/orders/my", response_model=List[OrderResponse])
+async def get_my_orders(user: dict = Depends(get_current_user)):
+    orders = await db.orders.find(
+        {"user_id": user.get("user_id")},
+        {"_id": 0, "user_id": 0}
+    ).sort("created_at", -1).to_list(1000)
+    return [OrderResponse(**order) for order in orders]
 
 @api_router.get("/orders", response_model=List[OrderResponse])
 async def get_orders(user: dict = Depends(get_current_user)):
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    orders = await db.orders.find({}, {"_id": 0}).to_list(1000)
+    orders = await db.orders.find({}, {"_id": 0, "user_id": 0}).to_list(1000)
     return [OrderResponse(**order) for order in orders]
 
 @api_router.delete("/orders/{order_id}")
