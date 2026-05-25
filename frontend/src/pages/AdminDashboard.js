@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Upload, Package, Image as ImageIcon } from 'lucide-react';
+import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -20,6 +21,8 @@ const AdminDashboard = () => {
     title: '',
     description: '',
     category: '',
+    subcategory: '',
+    hermandad: '',
     price_digital: '',
     price_physical: '',
   });
@@ -67,7 +70,15 @@ const AdminDashboard = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Si cambia categoría o día, resetea los campos dependientes
+    if (name === 'category') {
+      setFormData({ ...formData, category: value, subcategory: '', hermandad: '' });
+    } else if (name === 'subcategory') {
+      setFormData({ ...formData, subcategory: value, hermandad: '' });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleFileChange = (e) => {
@@ -86,6 +97,8 @@ const AdminDashboard = () => {
     formDataToSend.append('title', formData.title);
     formDataToSend.append('description', formData.description);
     formDataToSend.append('category', formData.category);
+    if (formData.subcategory) formDataToSend.append('subcategory', formData.subcategory);
+    if (formData.hermandad) formDataToSend.append('hermandad', formData.hermandad);
     formDataToSend.append('price_digital', formData.price_digital);
     formDataToSend.append('price_physical', formData.price_physical);
     formDataToSend.append('file', file);
@@ -96,7 +109,7 @@ const AdminDashboard = () => {
         withCredentials: true,
       });
       toast.success('¡Fotografía subida con éxito!');
-      setFormData({ title: '', description: '', category: '', price_digital: '', price_physical: '' });
+      setFormData({ title: '', description: '', category: '', subcategory: '', hermandad: '', price_digital: '', price_physical: '' });
       setFile(null);
       fetchPhotos();
     } catch (error) {
@@ -222,6 +235,54 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
+
+                {formData.category === 'hermandades' && (
+                  <>
+                    <div>
+                      <label htmlFor="subcategory" className="block text-sm font-medium mb-2">
+                        Día de Semana Santa
+                      </label>
+                      <select
+                        id="subcategory"
+                        name="subcategory"
+                        value={formData.subcategory}
+                        onChange={handleChange}
+                        className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                        data-testid="upload-subcategory-select"
+                      >
+                        <option value="">Selecciona un día</option>
+                        {DIAS_SEMANA_SANTA.map((dia) => (
+                          <option key={dia} value={dia}>
+                            {dia}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.subcategory && (
+                      <div>
+                        <label htmlFor="hermandad" className="block text-sm font-medium mb-2">
+                          Hermandad
+                        </label>
+                        <select
+                          id="hermandad"
+                          name="hermandad"
+                          value={formData.hermandad}
+                          onChange={handleChange}
+                          className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                          data-testid="upload-hermandad-select"
+                        >
+                          <option value="">Selecciona una hermandad</option>
+                          {HERMANDADES_POR_DIA[formData.subcategory].map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -133,6 +133,8 @@ class PhotoCreate(BaseModel):
     title: str
     description: Optional[str] = None
     category: str
+    subcategory: Optional[str] = None
+    hermandad: Optional[str] = None
     price_digital: float
     price_physical: float
 
@@ -141,6 +143,8 @@ class PhotoResponse(BaseModel):
     title: str
     description: Optional[str] = None
     category: str
+    subcategory: Optional[str] = None
+    hermandad: Optional[str] = None
     price_digital: float
     price_physical: float
     image_url: str
@@ -299,6 +303,8 @@ async def create_photo(
     title: str = File(...),
     description: Optional[str] = File(None),
     category: str = File(...),
+    subcategory: Optional[str] = File(None),
+    hermandad: Optional[str] = File(None),
     price_digital: float = File(...),
     price_physical: float = File(...),
     file: UploadFile = File(...),
@@ -307,7 +313,6 @@ async def create_photo(
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    from bson import ObjectId
     photo_id = str(uuid.uuid4())
     ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
     storage_path = f"{APP_NAME}/photos/{uuid.uuid4()}.{ext}"
@@ -320,6 +325,8 @@ async def create_photo(
         "title": title,
         "description": description,
         "category": category,
+        "subcategory": subcategory,
+        "hermandad": hermandad,
         "price_digital": price_digital,
         "price_physical": price_physical,
         "storage_path": result["path"],
@@ -335,6 +342,8 @@ async def create_photo(
         title=title,
         description=description,
         category=category,
+        subcategory=subcategory,
+        hermandad=hermandad,
         price_digital=price_digital,
         price_physical=price_physical,
         image_url=f"/api/photos/{photo_id}/image",
@@ -342,10 +351,27 @@ async def create_photo(
     )
 
 @api_router.get("/photos", response_model=List[PhotoResponse])
-async def get_photos(category: Optional[str] = None):
+async def get_photos(
+    category: Optional[str] = None,
+    subcategory: Optional[str] = None,
+    hermandad: Optional[str] = None,
+    search: Optional[str] = None
+):
     query = {"is_deleted": False}
     if category:
         query["category"] = category
+    if subcategory:
+        query["subcategory"] = subcategory
+    if hermandad:
+        query["hermandad"] = hermandad
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"title": search_regex},
+            {"description": search_regex},
+            {"hermandad": search_regex},
+            {"subcategory": search_regex},
+        ]
     
     photos = await db.photos.find(query, {"_id": 0}).to_list(1000)
     
@@ -355,6 +381,8 @@ async def get_photos(category: Optional[str] = None):
             title=photo["title"],
             description=photo.get("description"),
             category=photo["category"],
+            subcategory=photo.get("subcategory"),
+            hermandad=photo.get("hermandad"),
             price_digital=photo["price_digital"],
             price_physical=photo["price_physical"],
             image_url=f"/api/photos/{photo['id']}/image",
@@ -374,6 +402,8 @@ async def get_photo(photo_id: str):
         title=photo["title"],
         description=photo.get("description"),
         category=photo["category"],
+        subcategory=photo.get("subcategory"),
+        hermandad=photo.get("hermandad"),
         price_digital=photo["price_digital"],
         price_physical=photo["price_physical"],
         image_url=f"/api/photos/{photo['id']}/image",
