@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const DEFAULT_HERO = 'https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png';
 
 const Home = () => {
+  const [heroUrl, setHeroUrl] = useState(DEFAULT_HERO);
+
+  useEffect(() => {
+    axios.get(`${API}/settings/hero`).then(({ data }) => {
+      if (data.is_custom) {
+        setHeroUrl(`${process.env.REACT_APP_BACKEND_URL}${data.url}`);
+      } else {
+        setHeroUrl(data.url);
+      }
+    }).catch(() => setHeroUrl(DEFAULT_HERO));
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -10,7 +26,7 @@ const Home = () => {
         <div
           className="absolute inset-0 z-0"
           style={{
-            backgroundImage: 'url(https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png)',
+            backgroundImage: `url(${heroUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
