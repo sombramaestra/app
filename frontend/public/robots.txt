@@ -1,0 +1,13 @@
+# robots.txt for PasionCofrade
+User-agent: *
+Allow: /
+
+# Disallow admin and auth pages from crawling
+Disallow: /admin/
+Disallow: /login
+Disallow: /perfil
+Disallow: /checkout
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://pasioncofrade.com/sitemap.xml
