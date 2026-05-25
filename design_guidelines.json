@@ -1,0 +1,96 @@
+{
+  "project_name": "PasionCofrade",
+  "theme": "dark",
+  "archetype": "Archetype 5 (Luxury) - Modified with user-requested grays, blacks, whites, and deep purples.",
+  "colors": {
+    "background": "#0C0A0D",
+    "surface": "#1A171D",
+    "surface_hover": "#252129",
+    "primary": "#522A4E",
+    "primary_hover": "#6D3B68",
+    "text_main": "#F8F7F9",
+    "text_muted": "#AFA8B3",
+    "border": "#2C2631",
+    "accent": "#9C6AB0"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Cormorant Garamond",
+      "body": "Outfit"
+    },
+    "hierarchy": {
+      "h1": "text-5xl md:text-6xl tracking-tighter leading-none font-light",
+      "h2": "text-3xl md:text-4xl tracking-tight leading-tight font-normal",
+      "h3": "text-xl md:text-2xl tracking-normal font-medium",
+      "body": "text-base leading-relaxed text-muted",
+      "overline": "text-xs tracking-[0.2em] uppercase text-accent"
+    }
+  },
+  "spacing_and_layout": {
+    "container_padding": "px-6 md:px-12 lg:px-24",
+    "section_gap": "py-24 md:py-32",
+    "grid_strategy": "Asymmetric Tetris Grid (Mode A) for the photography gallery. Wide gaps (gap-8), varying col-spans and row-spans to create an editorial, museum-like layout."
+  },
+  "surfaces_and_borders": {
+    "cards": "Flat backgrounds, 1px subtle border (border-white/5), no heavy shadows. Strict and clean.",
+    "glassmorphism": "Only for sticky header or floating chatbot window. backdrop-blur-xl bg-[#0C0A0D]/70 border-b border-white/10.",
+    "radius": "rounded-none or minimal rounded-sm (2px) for sharp, premium feel."
+  },
+  "components": {
+    "buttons": "Solid primary color for main CTA, or ghost with 1px border. Sharp corners. Explicit hover text color.",
+    "navigation": "Sticky glassmorphic header, visible on desktop with logo, links, and cart icon.",
+    "forms": "Use Shadcn components. Override default radius to rounded-none. Input fields with bg-surface, border-border, focus:border-accent."
+  },
+  "media_and_images": {
+    "rules": "Never use placeholder text or dummy images. Always use provided URLs. Maintain high contrast for text over images using gradient overlays.",
+    "urls": {
+      "hero_background": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png",
+        "description": "Cinematic Semana Santa procession for the main hero section."
+      },
+      "about_photographers": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png",
+        "description": "Portrait of Gonzalo Lara and Manuel Gonzalez for the About Us section."
+      },
+      "gallery_paso": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/989b4bdb74f1bb368e1a126e6d3bebe7d6d4d90d68611c484fa773577ed4c4a8.png",
+        "description": "Fine art photo of Virgin Mary paso, use in gallery."
+      },
+      "gallery_nazareno": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/4b541d48c9a5d551d194f7c3efd2f483bf3209a48eb5953bf410d8a9c6e253bd.png",
+        "description": "Black and white portrait of a nazareno, use in gallery."
+      },
+      "gallery_incense": {
+        "url": "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/947215a18c011396090ff53397782a4309640d058ea37a5de4b2e34f1f4c29c7.png",
+        "description": "Incense smoke photo for atmospheric shots in gallery or about section."
+      },
+      "gallery_candles": {
+        "url": "https://images.unsplash.com/photo-1555883451-aeb2991f0a9e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwzfHxyZWxpZ2lvdXMlMjBwcm9jZXNzaW9uJTIwY2FuZGxlcyUyMG5pZ2h0fGVufDB8fHx8MTc3OTcyMjY0N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Lighted candles photo for gallery."
+      },
+      "gallery_church": {
+        "url": "https://images.unsplash.com/photo-1699830506478-af7b3f5e6cc9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTJ8MHwxfHNlYXJjaHwzfHxjaHVyY2glMjBnb3RoaWMlMjBpbnRlcmlvciUyMGRhcmt8ZW58MHx8fHwxNzc5NzIyNjQ3fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Gothic church interior for gallery."
+      }
+    }
+  },
+  "specific_instructions_for_main_agent": {
+    "key_functionalities": [
+      "Hero section: Use 'hero_background' with a max overlay opacity of bg-black/40. No heavier. Use gradient overlay if needed.",
+      "Gallery: Must be filterable (Hermandades, Eventos, Pueblos). Use an asymmetric grid layout. Each image should be purchasable (digital or physical).",
+      "E-commerce: Shopping cart system with a checkout flow. Payment options MUST be manual: 'Pago con Bizum' and 'Efectivo'.",
+      "About Us: 2 photographers (Gonzalo Lara & Manuel González). Use 'about_photographers' image.",
+      "Instagram Feed: Static gallery layout linking directly to @gonzalo_0702 and @manugfotos.",
+      "Contact: Form + social links.",
+      "Chatbot: AI Chatbot floating UI for FAQs (sizes, contracts).",
+      "Admin Panel: Build a basic layout for uploading photos.",
+      "MUST use data-testid for all interactive and key elements."
+    ],
+    "design_rules": [
+      "No generic tech gradients. Use solid colors and high-end photographic textures.",
+      "Do not center everything. Use optical alignment and asymmetric layouts.",
+      "Do not use Inter for headings. Use Cormorant Garamond.",
+      "Dark theme only. Colors must exactly match the provided hex codes in this JSON."
+    ]
+  }
+}
