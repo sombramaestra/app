@@ -1,0 +1,362 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { Upload, Package, Image as ImageIcon } from 'lucide-react';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const AdminDashboard = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('upload');
+  const [orders, setOrders] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    price_digital: '',
+    price_physical: '',
+  });
+  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== 'admin')) {
+      navigate('/admin/login');
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      fetchCategories();
+      fetchOrders();
+      fetchPhotos();
+    }
+  }, [user]);
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await axios.get(`${API}/categories`);
+      setCategories(data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const { data } = await axios.get(`${API}/orders`, { withCredentials: true });
+      setOrders(data);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  const fetchPhotos = async () => {
+    try {
+      const { data } = await axios.get(`${API}/photos`);
+      setPhotos(data);
+    } catch (error) {
+      console.error('Error fetching photos:', error);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      toast.error('Por favor selecciona una imagen');
+      return;
+    }
+
+    setUploadLoading(true);
+    const formDataToSend = new FormData();
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('category', formData.category);
+    formDataToSend.append('price_digital', formData.price_digital);
+    formDataToSend.append('price_physical', formData.price_physical);
+    formDataToSend.append('file', file);
+
+    try {
+      await axios.post(`${API}/photos`, formDataToSend, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true,
+      });
+      toast.success('¡Fotografía subida con éxito!');
+      setFormData({ title: '', description: '', category: '', price_digital: '', price_physical: '' });
+      setFile(null);
+      fetchPhotos();
+    } catch (error) {
+      toast.error('Error al subir la fotografía');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-[#AFA8B3]">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen pt-24 pb-24">
+      <div className="px-6 md:px-12 lg:px-24">
+        <h1 className="text-3xl md:text-4xl tracking-tight font-normal mb-8" data-testid="admin-dashboard-title">
+          Panel de Administración
+        </h1>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-[#2C2631]">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`pb-4 px-2 transition-colors duration-200 ${
+              activeTab === 'upload'
+                ? 'border-b-2 border-[#522A4E] text-[#F8F7F9]'
+                : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+            }`}
+            data-testid="tab-upload"
+          >
+            <Upload size={20} className="inline mr-2" />
+            Subir Fotografía
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`pb-4 px-2 transition-colors duration-200 ${
+              activeTab === 'orders'
+                ? 'border-b-2 border-[#522A4E] text-[#F8F7F9]'
+                : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+            }`}
+            data-testid="tab-orders"
+          >
+            <Package size={20} className="inline mr-2" />
+            Pedidos ({orders.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('photos')}
+            className={`pb-4 px-2 transition-colors duration-200 ${
+              activeTab === 'photos'
+                ? 'border-b-2 border-[#522A4E] text-[#F8F7F9]'
+                : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+            }`}
+            data-testid="tab-photos"
+          >
+            <ImageIcon size={20} className="inline mr-2" />
+            Fotografías ({photos.length})
+          </button>
+        </div>
+
+        {/* Upload Tab */}
+        {activeTab === 'upload' && (
+          <div className="max-w-2xl" data-testid="upload-section">
+            <form onSubmit={handleSubmit} className="bg-[#1A171D] border border-white/5 p-8">
+              <div className="space-y-6">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium mb-2">
+                    Título *
+                  </label>
+                  <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                    data-testid="upload-title-input"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium mb-2">
+                    Descripción
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0] resize-none"
+                    data-testid="upload-description-input"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium mb-2">
+                    Categoría *
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                    data-testid="upload-category-select"
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.slug}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="price_digital" className="block text-sm font-medium mb-2">
+                      Precio Digital (€) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      id="price_digital"
+                      name="price_digital"
+                      value={formData.price_digital}
+                      onChange={handleChange}
+                      required
+                      className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                      data-testid="upload-price-digital-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="price_physical" className="block text-sm font-medium mb-2">
+                      Precio Físico (€) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      id="price_physical"
+                      name="price_physical"
+                      value={formData.price_physical}
+                      onChange={handleChange}
+                      required
+                      className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                      data-testid="upload-price-physical-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="file" className="block text-sm font-medium mb-2">
+                    Imagen *
+                  </label>
+                  <input
+                    type="file"
+                    id="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    required
+                    className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                    data-testid="upload-file-input"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={uploadLoading}
+                  className="w-full bg-[#522A4E] hover:bg-[#6D3B68] disabled:bg-[#252129] disabled:text-[#AFA8B3] text-white py-3 transition-colors duration-200"
+                  data-testid="upload-submit-button"
+                >
+                  {uploadLoading ? 'Subiendo...' : 'Subir Fotografía'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <div data-testid="orders-section">
+            {orders.length === 0 ? (
+              <p className="text-[#AFA8B3]">No hay pedidos todavía.</p>
+            ) : (
+              <div className="space-y-4">
+                {orders.map((order) => (
+                  <div key={order.id} className="bg-[#1A171D] border border-white/5 p-6" data-testid={`order-${order.id}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-medium text-lg">Pedido #{order.order_number}</h3>
+                        <p className="text-sm text-[#AFA8B3]">{new Date(order.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <span className="text-[#9C6AB0] font-medium text-lg">{order.total.toFixed(2)}€</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <p><span className="text-[#AFA8B3]">Cliente:</span> {order.customer_name}</p>
+                      <p><span className="text-[#AFA8B3]">Email:</span> {order.customer_email}</p>
+                      <p><span className="text-[#AFA8B3]">Teléfono:</span> {order.customer_phone}</p>
+                      <p><span className="text-[#AFA8B3]">Pago:</span> {order.payment_method}</p>
+                      <p><span className="text-[#AFA8B3]">Estado:</span> {order.status}</p>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-[#2C2631]">
+                      <h4 className="text-sm font-medium mb-2">Artículos:</h4>
+                      <ul className="text-sm space-y-1">
+                        {order.items.map((item, idx) => (
+                          <li key={idx} className="text-[#AFA8B3]">
+                            {item.photo_title} - {item.format_type} ({item.price.toFixed(2)}€)
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Photos Tab */}
+        {activeTab === 'photos' && (
+          <div data-testid="photos-section">
+            {photos.length === 0 ? (
+              <p className="text-[#AFA8B3]">No hay fotografías todavía.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {photos.map((photo) => (
+                  <div key={photo.id} className="bg-[#1A171D] border border-white/5" data-testid={`photo-${photo.id}`}>
+                    <img
+                      src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
+                      alt={photo.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-4">
+                      <h3 className="font-medium mb-1">{photo.title}</h3>
+                      <p className="text-xs text-[#AFA8B3] mb-2">{photo.category}</p>
+                      <div className="text-xs text-[#9C6AB0]">
+                        Digital: {photo.price_digital}€ | Físico: {photo.price_physical}€
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
