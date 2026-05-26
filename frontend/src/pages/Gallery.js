@@ -145,7 +145,7 @@ const Gallery = () => {
           >
             Todas
           </button>
-          {categories.map((category) => (
+          {categories.filter(c => c.slug !== 'asociaciones-civiles').map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategoryChange(category.slug)}

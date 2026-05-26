@@ -158,6 +158,17 @@ export const HERMANDADES_POR_DIA = {
     "Reina de Todos los Santos",
     "Amparo",
   ],
+  "Asociaciones Civiles": [
+    "Clemencia y De",
+    "Despojado de la Luz",
+    "Soledad de los Arcos",
+    "Kirri",
+    "Desconsuelo",
+    "Salud y Esperanza",
+    "Salud y Bondad",
+    "Abnegación",
+    "Consuelo de Triana",
+  ],
 };
 
 export const DIAS_SEMANA_SANTA = Object.keys(HERMANDADES_POR_DIA);
