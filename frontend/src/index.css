@@ -49,6 +49,15 @@ body {
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
     }
+    /* Disable image dragging and selection globally */
+    img {
+        -webkit-user-drag: none;
+        -khtml-user-drag: none;
+        -moz-user-drag: none;
+        -o-user-drag: none;
+        user-drag: none;
+        -webkit-touch-callout: none;
+    }
 }
 
 @layer base {

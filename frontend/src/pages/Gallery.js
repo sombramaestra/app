@@ -4,6 +4,8 @@ import { useCart } from '../contexts/CartContext';
 import { toast } from 'sonner';
 import { Search, X, ChevronDown } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
+import ProtectedImage from '../components/ProtectedImage';
+import { PUEBLOS_POR_COMARCA, COMARCAS_SEVILLA, HERMANDADES_POR_PUEBLO } from '../data/pueblos';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -13,6 +15,9 @@ const Gallery = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedHermandad, setSelectedHermandad] = useState(null);
+  const [selectedComarca, setSelectedComarca] = useState(null);
+  const [selectedPueblo, setSelectedPueblo] = useState(null);
+  const [selectedHermandadPueblo, setSelectedHermandadPueblo] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,7 +37,7 @@ const Gallery = () => {
 
   useEffect(() => {
     fetchPhotos();
-  }, [selectedCategory, selectedDay, selectedHermandad, debouncedSearch]);
+  }, [selectedCategory, selectedDay, selectedHermandad, selectedComarca, selectedPueblo, selectedHermandadPueblo, debouncedSearch]);
 
   const fetchCategories = async () => {
     try {
@@ -50,6 +55,9 @@ const Gallery = () => {
       if (selectedCategory) params.append('category', selectedCategory);
       if (selectedDay) params.append('subcategory', selectedDay);
       if (selectedHermandad) params.append('hermandad', selectedHermandad);
+      if (selectedComarca) params.append('comarca', selectedComarca);
+      if (selectedPueblo) params.append('pueblo', selectedPueblo);
+      if (selectedHermandadPueblo) params.append('hermandad', selectedHermandadPueblo);
       if (debouncedSearch) params.append('search', debouncedSearch);
 
       const url = `${API}/photos?${params.toString()}`;
@@ -72,18 +80,24 @@ const Gallery = () => {
     setSelectedCategory(categorySlug);
     setSelectedDay(null);
     setSelectedHermandad(null);
-    setShowHermandadesPanel(categorySlug === 'hermandades');
+    setSelectedComarca(null);
+    setSelectedPueblo(null);
+    setSelectedHermandadPueblo(null);
+    setShowHermandadesPanel(categorySlug === 'hermandades' || categorySlug === 'pueblos');
   };
 
   const handleClearFilters = () => {
     setSelectedCategory(null);
     setSelectedDay(null);
     setSelectedHermandad(null);
+    setSelectedComarca(null);
+    setSelectedPueblo(null);
+    setSelectedHermandadPueblo(null);
     setSearchTerm('');
     setShowHermandadesPanel(false);
   };
 
-  const hasActiveFilters = selectedCategory || selectedDay || selectedHermandad || searchTerm;
+  const hasActiveFilters = selectedCategory || selectedDay || selectedHermandad || selectedComarca || selectedPueblo || selectedHermandadPueblo || searchTerm;
 
   return (
     <div className="min-h-screen pt-24 pb-24">
@@ -121,7 +135,7 @@ const Gallery = () => {
         {/* Category Filters */}
         <div className="flex flex-wrap gap-3 mb-6 justify-center" data-testid="category-filters">
           <button
-            onClick={() => { setSelectedCategory(null); setSelectedDay(null); setSelectedHermandad(null); setShowHermandadesPanel(false); }}
+            onClick={() => { setSelectedCategory(null); setSelectedDay(null); setSelectedHermandad(null); setSelectedComarca(null); setSelectedPueblo(null); setShowHermandadesPanel(false); }}
             className={`px-6 py-2 border transition-colors duration-200 ${
               selectedCategory === null
                 ? 'bg-[#522A4E] border-[#522A4E] text-white'
@@ -169,6 +183,21 @@ const Gallery = () => {
             {selectedHermandad && (
               <span className="bg-[#252129] border border-[#9C6AB0] text-[#9C6AB0] px-3 py-1 text-xs" data-testid="active-filter-hermandad">
                 {selectedHermandad}
+              </span>
+            )}
+            {selectedComarca && (
+              <span className="bg-[#252129] border border-[#9C6AB0] text-[#9C6AB0] px-3 py-1 text-xs" data-testid="active-filter-comarca">
+                {selectedComarca}
+              </span>
+            )}
+            {selectedPueblo && (
+              <span className="bg-[#252129] border border-[#9C6AB0] text-[#9C6AB0] px-3 py-1 text-xs" data-testid="active-filter-pueblo">
+                {selectedPueblo}
+              </span>
+            )}
+            {selectedHermandadPueblo && (
+              <span className="bg-[#252129] border border-[#9C6AB0] text-[#9C6AB0] px-3 py-1 text-xs" data-testid="active-filter-hermandad-pueblo">
+                {selectedHermandadPueblo}
               </span>
             )}
             <button
@@ -224,6 +253,71 @@ const Gallery = () => {
           </div>
         )}
 
+        {/* Pueblos Panel (jerárquico por comarca → pueblo → hermandad) */}
+        {showHermandadesPanel && selectedCategory === 'pueblos' && (
+          <div className="bg-[#1A171D] border border-[#2C2631] p-6 mb-12" data-testid="pueblos-panel">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {COMARCAS_SEVILLA.map((comarca) => (
+                <div key={comarca} className="border border-[#2C2631] p-4" data-testid={`comarca-section-${comarca}`}>
+                  <h3
+                    onClick={() => {
+                      setSelectedComarca(selectedComarca === comarca ? null : comarca);
+                      setSelectedPueblo(null);
+                      setSelectedHermandadPueblo(null);
+                    }}
+                    className={`text-xs tracking-[0.2em] uppercase mb-3 cursor-pointer transition-colors ${
+                      selectedComarca === comarca ? 'text-[#9C6AB0]' : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+                    }`}
+                  >
+                    {comarca}
+                  </h3>
+                  <ul className="space-y-1.5">
+                    {PUEBLOS_POR_COMARCA[comarca].map((pueblo) => (
+                      <li key={pueblo}>
+                        <button
+                          onClick={() => {
+                            setSelectedComarca(comarca);
+                            setSelectedPueblo(pueblo === selectedPueblo ? null : pueblo);
+                            setSelectedHermandadPueblo(null);
+                          }}
+                          className={`text-sm text-left transition-colors ${
+                            selectedPueblo === pueblo
+                              ? 'text-[#9C6AB0] font-medium'
+                              : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+                          }`}
+                          data-testid={`pueblo-${pueblo.replace(/\s+/g, '-').toLowerCase()}`}
+                        >
+                          {pueblo}
+                        </button>
+                        {selectedPueblo === pueblo && HERMANDADES_POR_PUEBLO[pueblo] && (
+                          <ul className="mt-1.5 ml-3 space-y-1">
+                            {HERMANDADES_POR_PUEBLO[pueblo].map((hermandad) => (
+                              <li key={hermandad}>
+                                <button
+                                  onClick={() => {
+                                    setSelectedHermandadPueblo(hermandad === selectedHermandadPueblo ? null : hermandad);
+                                  }}
+                                  className={`text-xs text-left transition-colors ${
+                                    selectedHermandadPueblo === hermandad
+                                      ? 'text-[#9C6AB0] font-medium'
+                                      : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+                                  }`}
+                                >
+                                  {hermandad}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Gallery Grid */}
         {loading ? (
           <div className="text-center py-20" data-testid="gallery-loading">
@@ -243,12 +337,13 @@ const Gallery = () => {
                 data-testid={`photo-card-${photo.id}`}
               >
                 <div className="relative overflow-hidden bg-[#1A171D] border border-white/5 aspect-[3/4]">
-                  <img
+                  <ProtectedImage
                     src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
                     alt={photo.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+                    watermarkSize="md"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                     <div className="absolute bottom-0 left-0 right-0 p-6">
                       <h3 className="text-xl font-medium mb-2">{photo.title}</h3>
                       {photo.hermandad && (
@@ -278,10 +373,11 @@ const Gallery = () => {
               onClick={(e) => e.stopPropagation()}
               data-testid="photo-modal"
             >
-              <img
+              <ProtectedImage
                 src={`${process.env.REACT_APP_BACKEND_URL}${selectedPhoto.image_url}`}
                 alt={selectedPhoto.title}
-                className="w-full h-auto"
+                className="w-full h-auto aspect-[4/3]"
+                watermarkSize="lg"
               />
               <div className="p-8">
                 <h2 className="text-3xl md:text-4xl tracking-tight font-normal mb-4">{selectedPhoto.title}</h2>

@@ -94,6 +94,112 @@ export const HERMANDADES_POR_DIA = {
   "Domingo de Resurrección": [
     "La Resurrección",
   ],
+  "María Auxiliadora": [
+    "María Auxiliadora Triana",
+    "María Auxiliadora Trinidad",
+    "María Auxiliadora San Vicente",
+    "María Auxiliadora Nervión",
+  ],
+  "Pastoras": [
+    "Pastora de Capuchinos",
+    "Pastora San Antonio",
+    "Pastora de Santa Marina",
+    "Pastora de Triana",
+    "Pastora de Padre Pío",
+  ],
+  "Virgen del Carmen": [
+    "Virgen del Carmen de San Gil",
+    "Virgen del Carmen de San Leandro",
+    "Virgen del Carmen de Santa Catalina",
+    "Virgen del Carmen de Santa Ana",
+    "Virgen del Carmen de Calatrava",
+    "Virgen del Carmen de San Pablo",
+    "Virgen del Carmen de Puente de Triana",
+    "Virgen del Carmen de Santo Ángel",
+  ],
+  "Virgen del Rosario": [
+    "Virgen del Rosario de Triana",
+    "Virgen del Rosario de Húmeros",
+    "Virgen del Rosario de Barrio León",
+    "Virgen del Rosario de San Julián",
+    "Virgen del Rosario de Las Aguas",
+    "Virgen del Rosario de La Macarena",
+    "Virgen del Rosario de Santa Catalina",
+  ],
+  "Glorias": [
+    "San José Obrero",
+    "Alegría",
+    "Salud",
+    "Araceli",
+    "Mar",
+    "San Hermenegildo",
+    "Anunciación Juan XXIII",
+    "Desamparados Alcosa",
+    "Hiniesta Gloriosa",
+    "Candelaria Madre de Dios",
+    "Inmaculado Corazón Claret",
+    "Inmaculado Corazón Torreblanca",
+    "San Antonio Torreblanca",
+    "Sagrado Corazón Nervión",
+    "Carmen San Gil",
+    "Virgen de Guadalupe",
+    "Virgen de la Luz",
+    "Virgen del Juncal",
+    "Virgen de Valvanera",
+    "Virgen del Buen Aire",
+    "Santa Lucía",
+    "Las Nieves",
+    "La Encarnación",
+    "La Milagrosa",
+    "Divina Enfermera",
+    "Virgen de la Cabeza",
+    "Virgen del Pilar",
+    "Salud del Sol",
+    "Reina de Todos los Santos",
+    "Amparo",
+  ],
 };
 
 export const DIAS_SEMANA_SANTA = Object.keys(HERMANDADES_POR_DIA);
+
+// Pueblos de Sevilla
+export const PUEBLOS_DE_SEVILLA = {
+  "Alcalá de Guadaíra": {
+    "Domingo de Ramos": [
+      "Hermandad de la Borriquita",
+      "Hermandad del Rosario",
+    ],
+    "Lunes Santo": [
+      "Hermandad de la Tercera Palabra",
+    ],
+    "Martes Santo": [
+      "Hermandad del Perdón",
+    ],
+    "Miércoles Santo": [
+      "Hermandad del Soberano Poder",
+      "Hermandad del Cautivo",
+    ],
+    "Jueves Santo": [
+      "Hermandad de la Amargura",
+    ],
+    "Madrugada del Viernes Santo": [
+      "Hermandad de Jesús Nazareno",
+    ],
+    "Viernes Santo": [
+      "Hermandad del Santo Entierro",
+    ],
+    "Sábado Santo": [
+      "Hermandad de la Divina Misericordia",
+    ],
+    "Glorias": [
+      "Hermandad del Dulce Nombre",
+      "Archicofradía de María Auxiliadora",
+      "Hermandad del Rocío de Alcalá",
+      "Hermandad de la Virgen del Águila",
+      "Hermandad de San Mateo",
+      "Hermandad de la Divina Misericordia - Rosario de Santiago",
+    ],
+  },
+};
+
+export const PUEBLOS = Object.keys(PUEBLOS_DE_SEVILLA);

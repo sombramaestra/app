@@ -35,13 +35,13 @@ const Home = () => {
         </div>
 
         <div className="relative z-10 text-center px-6 md:px-12 lg:px-24">
-          <p className="text-xs tracking-[0.2em] uppercase text-[#9C6AB0] mb-6" data-testid="hero-overline">
+          <p className="text-xs tracking-[0.2em] uppercase text-black mb-6" data-testid="hero-overline">
             Fotografía Cofrade Profesional
           </p>
           <h1 className="text-5xl md:text-6xl tracking-tighter leading-none font-light mb-6" data-testid="hero-title">
             Capturando la Pasión<br />de Sevilla
           </h1>
-          <p className="text-base leading-relaxed text-[#AFA8B3] max-w-2xl mx-auto mb-8" data-testid="hero-description">
+          <p className="text-base leading-relaxed text-black max-w-2xl mx-auto mb-8" data-testid="hero-description">
             Descubre nuestra colección exclusiva de fotografías de Semana Santa y eventos cofrades de Sevilla y sus pueblos.
           </p>
           <Link

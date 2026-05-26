@@ -3,8 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Upload, Package, Image as ImageIcon, Trash2, Settings } from 'lucide-react';
+import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
+import AdminCalendar from '../components/AdminCalendar';
+import { PUEBLOS_POR_COMARCA, COMARCAS_SEVILLA, HERMANDADES_POR_PUEBLO } from '../data/pueblos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,8 @@ const AdminDashboard = () => {
     category: '',
     subcategory: '',
     hermandad: '',
+    comarca: '',
+    pueblo: '',
     price_digital: '',
     price_physical: '',
   });
@@ -151,9 +155,11 @@ const AdminDashboard = () => {
     const { name, value } = e.target;
     // Si cambia categoría o día, resetea los campos dependientes
     if (name === 'category') {
-      setFormData({ ...formData, category: value, subcategory: '', hermandad: '' });
+      setFormData({ ...formData, category: value, subcategory: '', hermandad: '', comarca: '', pueblo: '' });
     } else if (name === 'subcategory') {
       setFormData({ ...formData, subcategory: value, hermandad: '' });
+    } else if (name === 'comarca') {
+      setFormData({ ...formData, comarca: value, pueblo: '' });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -177,6 +183,8 @@ const AdminDashboard = () => {
     formDataToSend.append('category', formData.category);
     if (formData.subcategory) formDataToSend.append('subcategory', formData.subcategory);
     if (formData.hermandad) formDataToSend.append('hermandad', formData.hermandad);
+    if (formData.comarca) formDataToSend.append('comarca', formData.comarca);
+    if (formData.pueblo) formDataToSend.append('pueblo', formData.pueblo);
     formDataToSend.append('price_digital', formData.price_digital);
     formDataToSend.append('price_physical', formData.price_physical);
     formDataToSend.append('file', file);
@@ -187,7 +195,7 @@ const AdminDashboard = () => {
         withCredentials: true,
       });
       toast.success('¡Fotografía subida con éxito!');
-      setFormData({ title: '', description: '', category: '', subcategory: '', hermandad: '', price_digital: '', price_physical: '' });
+      setFormData({ title: '', description: '', category: '', subcategory: '', hermandad: '', comarca: '', pueblo: '', price_digital: '', price_physical: '' });
       setFile(null);
       fetchPhotos();
     } catch (error) {
@@ -265,6 +273,18 @@ const AdminDashboard = () => {
           >
             <Settings size={20} className="inline mr-2" />
             Configuración
+          </button>
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`pb-4 px-2 transition-colors duration-200 ${
+              activeTab === 'calendar'
+                ? 'border-b-2 border-[#522A4E] text-[#F8F7F9]'
+                : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+            }`}
+            data-testid="tab-calendar"
+          >
+            <Calendar size={20} className="inline mr-2" />
+            Calendario
           </button>
         </div>
 
@@ -374,6 +394,76 @@ const AdminDashboard = () => {
                   </>
                 )}
 
+                {formData.category === 'pueblos' && (
+                  <>
+                    <div>
+                      <label htmlFor="comarca" className="block text-sm font-medium mb-2">
+                        Comarca
+                      </label>
+                      <select
+                        id="comarca"
+                        name="comarca"
+                        value={formData.comarca}
+                        onChange={handleChange}
+                        className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                        data-testid="upload-comarca-select"
+                      >
+                        <option value="">Selecciona una comarca</option>
+                        {COMARCAS_SEVILLA.map((comarca) => (
+                          <option key={comarca} value={comarca}>
+                            {comarca}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {formData.comarca && (
+                      <div>
+                        <label htmlFor="pueblo" className="block text-sm font-medium mb-2">
+                          Pueblo
+                        </label>
+                        <select
+                          id="pueblo"
+                          name="pueblo"
+                          value={formData.pueblo}
+                          onChange={handleChange}
+                          className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                          data-testid="upload-pueblo-select"
+                        >
+                          <option value="">Selecciona un pueblo</option>
+                          {PUEBLOS_POR_COMARCA[formData.comarca].map((pueblo) => (
+                            <option key={pueblo} value={pueblo}>
+                              {pueblo}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {formData.pueblo && HERMANDADES_POR_PUEBLO[formData.pueblo] && (
+                      <div>
+                        <label htmlFor="hermandad_pueblo" className="block text-sm font-medium mb-2">
+                          Hermandad
+                        </label>
+                        <select
+                          id="hermandad_pueblo"
+                          name="hermandad"
+                          value={formData.hermandad}
+                          onChange={handleChange}
+                          className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
+                          data-testid="upload-hermandad-pueblo-select"
+                        >
+                          <option value="">Selecciona una hermandad</option>
+                          {HERMANDADES_POR_PUEBLO[formData.pueblo].map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="price_digital" className="block text-sm font-medium mb-2">
@@ -653,6 +743,11 @@ const AdminDashboard = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Calendar Tab */}
+        {activeTab === 'calendar' && (
+          <AdminCalendar />
         )}
       </div>
     </div>

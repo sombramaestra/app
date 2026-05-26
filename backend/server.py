@@ -217,6 +217,24 @@ class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
 
+class EventCreate(BaseModel):
+    title: str
+    date: str  # YYYY-MM-DD
+    time: Optional[str] = None  # HH:MM
+    location: Optional[str] = None
+    description: Optional[str] = None
+    photographer: str  # "gonzalo" or "manuel"
+
+class EventResponse(BaseModel):
+    id: str
+    title: str
+    date: str
+    time: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    photographer: str
+    created_at: str
+
 # Seed admin
 async def seed_admin():
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@pasioncofrade.com")
@@ -635,6 +653,47 @@ async def reset_hero_image(user: dict = Depends(get_current_user)):
     
     await db.settings.delete_one({"key": "hero_image"})
     return {"url": DEFAULT_HERO_URL, "is_custom": False}
+
+# Events endpoints (Admin calendar)
+@api_router.get("/events", response_model=List[EventResponse])
+async def get_events(user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    events = await db.events.find({}, {"_id": 0}).sort("date", 1).to_list(2000)
+    return [EventResponse(**event) for event in events]
+
+@api_router.post("/events", response_model=EventResponse)
+async def create_event(input: EventCreate, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if input.photographer not in ["gonzalo", "manuel"]:
+        raise HTTPException(status_code=400, detail="Fotógrafo no válido")
+    
+    event_id = str(uuid.uuid4())
+    event_doc = {
+        "id": event_id,
+        "title": input.title,
+        "date": input.date,
+        "time": input.time,
+        "location": input.location,
+        "description": input.description,
+        "photographer": input.photographer,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.events.insert_one(event_doc)
+    return EventResponse(**event_doc)
+
+@api_router.delete("/events/{event_id}")
+async def delete_event(event_id: str, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    result = await db.events.delete_one({"id": event_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return {"message": "Event deleted successfully"}
 
 # Categories endpoints
 @api_router.get("/categories", response_model=List[CategoryResponse])
