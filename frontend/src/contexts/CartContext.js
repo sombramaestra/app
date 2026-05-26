@@ -30,7 +30,7 @@ export const CartProvider = ({ children }) => {
       id: `${photo.id}-${formatType}`,
       photo_id: photo.id,
       photo_title: photo.title,
-      photo_image: photo.image_url,
+      photo_image: photo.thumb_url || photo.image_url,
       format_type: formatType,
       price: price,
     };

@@ -338,7 +338,7 @@ const Gallery = () => {
               >
                 <div className="relative overflow-hidden bg-[#1A171D] border border-white/5 aspect-[3/4]">
                   <ProtectedImage
-                    src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
+                    src={`${process.env.REACT_APP_BACKEND_URL}${photo.thumb_url || photo.image_url}`}
                     alt={photo.title}
                     className="w-full h-full group-hover:scale-105 transition-transform duration-500"
                     watermarkSize="md"

@@ -16,6 +16,8 @@ from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
 import requests
+from io import BytesIO
+from PIL import Image, ImageOps
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 # MongoDB connection
@@ -137,6 +139,33 @@ def get_object(path: str) -> tuple[bytes, str]:
     resp.raise_for_status()
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
 
+# Image processing
+def resize_image(data: bytes, max_size: int = 1200, quality: int = 85) -> tuple[bytes, str]:
+    """
+    Resize image keeping aspect ratio. Returns (jpeg_bytes, content_type).
+    - max_size: maximum width or height in pixels
+    - quality: JPEG quality (1-95)
+    """
+    img = Image.open(BytesIO(data))
+    img = ImageOps.exif_transpose(img)  # respect EXIF rotation
+    
+    # Convert to RGB if needed (PNG with alpha, etc.)
+    if img.mode in ("RGBA", "LA", "P"):
+        background = Image.new("RGB", img.size, (12, 10, 13))  # match site bg
+        if img.mode == "P":
+            img = img.convert("RGBA")
+        background.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+        img = background
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+    
+    # Resize keeping aspect ratio
+    img.thumbnail((max_size, max_size), Image.LANCZOS)
+    
+    out = BytesIO()
+    img.save(out, format="JPEG", quality=quality, optimize=True, progressive=True)
+    return out.getvalue(), "image/jpeg"
+
 # Models
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -174,6 +203,7 @@ class PhotoResponse(BaseModel):
     price_digital: float
     price_physical: float
     image_url: str
+    thumb_url: Optional[str] = None
     created_at: str
 
 class CategoryResponse(BaseModel):
@@ -476,11 +506,24 @@ async def create_photo(
         raise HTTPException(status_code=403, detail="Admin access required")
     
     photo_id = str(uuid.uuid4())
-    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    storage_path = f"{APP_NAME}/photos/{uuid.uuid4()}.{ext}"
-    
     data = await file.read()
-    result = put_object(storage_path, data, file.content_type or "image/jpeg")
+    base_uuid = uuid.uuid4()
+    
+    # Generate three sizes:
+    # - thumb: 600px max, for gallery grid (fast loading)
+    # - display: 1600px max, for modal/detail (good quality with watermark protection)
+    # - original: stored as backup for future digital delivery (full quality after purchase)
+    thumb_data, thumb_ct = resize_image(data, max_size=600, quality=80)
+    display_data, display_ct = resize_image(data, max_size=1600, quality=88)
+    
+    thumb_path = f"{APP_NAME}/photos/{base_uuid}_thumb.jpg"
+    display_path = f"{APP_NAME}/photos/{base_uuid}_display.jpg"
+    original_ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+    original_path = f"{APP_NAME}/photos/{base_uuid}_original.{original_ext}"
+    
+    put_object(thumb_path, thumb_data, thumb_ct)
+    put_object(display_path, display_data, display_ct)
+    put_object(original_path, data, file.content_type or "image/jpeg")
     
     photo_doc = {
         "id": photo_id,
@@ -491,7 +534,9 @@ async def create_photo(
         "hermandad": hermandad,
         "price_digital": price_digital,
         "price_physical": price_physical,
-        "storage_path": result["path"],
+        "thumb_path": thumb_path,
+        "display_path": display_path,
+        "storage_path": original_path,  # keep field name for back-compat
         "original_filename": file.filename,
         "is_deleted": False,
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -509,6 +554,7 @@ async def create_photo(
         price_digital=price_digital,
         price_physical=price_physical,
         image_url=f"/api/photos/{photo_id}/image",
+        thumb_url=f"/api/photos/{photo_id}/thumb",
         created_at=photo_doc["created_at"]
     )
 
@@ -548,6 +594,7 @@ async def get_photos(
             price_digital=photo["price_digital"],
             price_physical=photo["price_physical"],
             image_url=f"/api/photos/{photo['id']}/image",
+            thumb_url=f"/api/photos/{photo['id']}/thumb",
             created_at=photo["created_at"]
         )
         for photo in photos
@@ -569,17 +616,33 @@ async def get_photo(photo_id: str):
         price_digital=photo["price_digital"],
         price_physical=photo["price_physical"],
         image_url=f"/api/photos/{photo['id']}/image",
+        thumb_url=f"/api/photos/{photo['id']}/thumb",
         created_at=photo["created_at"]
     )
 
 @api_router.get("/photos/{photo_id}/image")
 async def get_photo_image(photo_id: str):
+    """Returns the display (medium-resolution) image for gallery modal."""
     photo = await db.photos.find_one({"id": photo_id, "is_deleted": False})
     if not photo:
         raise HTTPException(status_code=404, detail="Photo not found")
     
-    data, content_type = get_object(photo["storage_path"])
-    return Response(content=data, media_type=content_type)
+    # Prefer display version, fallback to original (back-compat)
+    path = photo.get("display_path") or photo.get("storage_path")
+    data, content_type = get_object(path)
+    return Response(content=data, media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
+
+@api_router.get("/photos/{photo_id}/thumb")
+async def get_photo_thumb(photo_id: str):
+    """Returns the thumbnail (small) image for gallery grid."""
+    photo = await db.photos.find_one({"id": photo_id, "is_deleted": False})
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    
+    # Prefer thumb, fallback to display, fallback to original
+    path = photo.get("thumb_path") or photo.get("display_path") or photo.get("storage_path")
+    data, content_type = get_object(path)
+    return Response(content=data, media_type=content_type, headers={"Cache-Control": "public, max-age=86400"})
 
 @api_router.delete("/photos/{photo_id}")
 async def delete_photo(photo_id: str, user: dict = Depends(get_current_user)):

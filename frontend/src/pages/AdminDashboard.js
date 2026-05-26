@@ -564,7 +564,7 @@ const AdminDashboard = () => {
                   <div key={photo.id} className="bg-[#1A171D] border border-white/5 relative group" data-testid={`photo-${photo.id}`}>
                     <div className="w-full h-48 bg-[#0C0A0D] flex items-center justify-center overflow-hidden">
                       <img
-                        src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
+                        src={`${process.env.REACT_APP_BACKEND_URL}${photo.thumb_url || photo.image_url}`}
                         alt={photo.title}
                         className="max-w-full max-h-full object-contain"
                       />
