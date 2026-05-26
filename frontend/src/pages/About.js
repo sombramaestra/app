@@ -1,7 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Instagram, Camera, Mail, Phone } from 'lucide-react';
 
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const DEFAULT_ABOUT = 'https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png';
+
 const About = () => {
+  const [aboutUrl, setAboutUrl] = useState(DEFAULT_ABOUT);
+  const [aboutLoaded, setAboutLoaded] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${API}/settings/about_image`).then(({ data }) => {
+      if (data.is_custom) {
+        setAboutUrl(`${process.env.REACT_APP_BACKEND_URL}${data.url}`);
+      } else {
+        setAboutUrl(data.url);
+      }
+    }).catch(() => setAboutUrl(DEFAULT_ABOUT));
+  }, []);
+
+  useEffect(() => {
+    setAboutLoaded(false);
+  }, [aboutUrl]);
+
   return (
     <div className="min-h-screen pt-24 pb-24">
       <div className="px-6 md:px-12 lg:px-24">
@@ -15,12 +36,16 @@ const About = () => {
         <div className="max-w-6xl mx-auto">
           {/* Image Section */}
           <div className="mb-16">
-            <img
-              src="https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png"
-              alt="Gonzalo Lara y Manuel Gómez"
-              className="w-full h-[400px] md:h-[600px] object-cover border border-white/5"
-              data-testid="about-photo"
-            />
+            <div className="relative w-full bg-[#0C0A0D] border border-white/5 overflow-hidden flex items-center justify-center" style={{ minHeight: '400px', maxHeight: '70vh' }}>
+              <img
+                src={aboutUrl}
+                alt="Gonzalo Lara y Manuel Gómez"
+                className={`w-full h-auto max-h-[70vh] object-contain transition-opacity duration-700 ${aboutLoaded ? 'opacity-100' : 'opacity-0'}`}
+                data-testid="about-photo"
+                onLoad={() => setAboutLoaded(true)}
+                onError={() => setAboutLoaded(true)}
+              />
+            </div>
           </div>
 
           {/* Description */}

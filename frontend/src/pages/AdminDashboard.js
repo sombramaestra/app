@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
 import AdminCalendar from '../components/AdminCalendar';
+import ImageSettingCard from '../components/ImageSettingCard';
 import { PUEBLOS_POR_COMARCA, COMARCAS_SEVILLA, HERMANDADES_POR_PUEBLO } from '../data/pueblos';
 import {
   AlertDialog,
@@ -42,9 +43,6 @@ const AdminDashboard = () => {
     price_physical: '',
   });
   const [file, setFile] = useState(null);
-  const [heroFile, setHeroFile] = useState(null);
-  const [heroInfo, setHeroInfo] = useState({ url: '', is_custom: false });
-  const [heroUploading, setHeroUploading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'admin')) {
@@ -57,52 +55,8 @@ const AdminDashboard = () => {
       fetchCategories();
       fetchOrders();
       fetchPhotos();
-      fetchHeroInfo();
     }
   }, [user]);
-
-  const fetchHeroInfo = async () => {
-    try {
-      const { data } = await axios.get(`${API}/settings/hero`);
-      setHeroInfo(data);
-    } catch (error) {
-      console.error('Error fetching hero info:', error);
-    }
-  };
-
-  const handleHeroUpload = async (e) => {
-    e.preventDefault();
-    if (!heroFile) {
-      toast.error('Selecciona una imagen primero');
-      return;
-    }
-    setHeroUploading(true);
-    const fd = new FormData();
-    fd.append('file', heroFile);
-    try {
-      await axios.post(`${API}/settings/hero`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        withCredentials: true,
-      });
-      toast.success('Imagen de inicio actualizada');
-      setHeroFile(null);
-      fetchHeroInfo();
-    } catch (error) {
-      toast.error('Error al actualizar la imagen');
-    } finally {
-      setHeroUploading(false);
-    }
-  };
-
-  const handleHeroReset = async () => {
-    try {
-      await axios.delete(`${API}/settings/hero`, { withCredentials: true });
-      toast.success('Imagen restaurada a la original');
-      fetchHeroInfo();
-    } catch (error) {
-      toast.error('Error al restaurar la imagen');
-    }
-  };
 
   const fetchCategories = async () => {
     try {
@@ -608,11 +562,13 @@ const AdminDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {photos.map((photo) => (
                   <div key={photo.id} className="bg-[#1A171D] border border-white/5 relative group" data-testid={`photo-${photo.id}`}>
-                    <img
-                      src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
-                      alt={photo.title}
-                      className="w-full h-48 object-cover"
-                    />
+                    <div className="w-full h-48 bg-[#0C0A0D] flex items-center justify-center overflow-hidden">
+                      <img
+                        src={`${process.env.REACT_APP_BACKEND_URL}${photo.image_url}`}
+                        alt={photo.title}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <button
@@ -661,87 +617,21 @@ const AdminDashboard = () => {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="max-w-3xl" data-testid="settings-section">
-            <div className="bg-[#1A171D] border border-white/5 p-8">
-              <h2 className="text-2xl font-medium mb-2">Imagen de Inicio (Hero)</h2>
-              <p className="text-sm text-[#AFA8B3] mb-6">
-                Personaliza la imagen principal que aparece al entrar en la web. Recomendado: imagen horizontal de alta calidad (mínimo 1920x1080px).
-              </p>
-
-              {/* Current Preview */}
-              <div className="mb-6">
-                <p className="text-xs tracking-[0.2em] uppercase text-[#9C6AB0] mb-3">
-                  Imagen Actual {heroInfo.is_custom ? '(Personalizada)' : '(Por defecto)'}
-                </p>
-                <div className="relative w-full h-64 bg-[#252129] border border-[#2C2631] overflow-hidden">
-                  <img
-                    src={heroInfo.is_custom ? `${process.env.REACT_APP_BACKEND_URL}${heroInfo.url}` : heroInfo.url}
-                    alt="Hero actual"
-                    className="w-full h-full object-cover"
-                    data-testid="current-hero-preview"
-                  />
-                </div>
-              </div>
-
-              {/* Upload Form */}
-              <form onSubmit={handleHeroUpload} className="space-y-4">
-                <div>
-                  <label htmlFor="hero_file" className="block text-sm font-medium mb-2">
-                    Nueva imagen
-                  </label>
-                  <input
-                    type="file"
-                    id="hero_file"
-                    accept="image/*"
-                    onChange={(e) => setHeroFile(e.target.files[0])}
-                    className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]"
-                    data-testid="hero-file-input"
-                  />
-                  <p className="text-xs text-[#AFA8B3] mt-2">
-                    💡 Tip: para mantener máxima calidad, sube la imagen original sin comprimir (JPG/PNG/WEBP).
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={heroUploading || !heroFile}
-                    className="bg-[#522A4E] hover:bg-[#6D3B68] disabled:bg-[#252129] disabled:text-[#AFA8B3] text-white px-6 py-3 transition-colors duration-200"
-                    data-testid="hero-upload-button"
-                  >
-                    {heroUploading ? 'Subiendo...' : 'Actualizar Imagen'}
-                  </button>
-
-                  {heroInfo.is_custom && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button
-                          type="button"
-                          className="border border-[#2C2631] text-[#AFA8B3] hover:border-[#9C6AB0] hover:text-[#F8F7F9] px-6 py-3 transition-colors duration-200"
-                          data-testid="hero-reset-button"
-                        >
-                          Restaurar Original
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-[#1A171D] border-[#2C2631] text-[#F8F7F9]">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>¿Restaurar imagen original?</AlertDialogTitle>
-                          <AlertDialogDescription className="text-[#AFA8B3]">
-                            La web volverá a mostrar la imagen de inicio por defecto.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-[#252129] border-[#2C2631] text-[#F8F7F9] hover:bg-[#2C2631]">Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleHeroReset} className="bg-red-600 hover:bg-red-700 text-white">
-                            Restaurar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </form>
-            </div>
+          <div className="max-w-3xl space-y-8" data-testid="settings-section">
+            <ImageSettingCard
+              settingKey="hero_image"
+              title="Imagen de Inicio (Hero)"
+              description="Personaliza la imagen principal que aparece al entrar en la web. Recomendado: imagen horizontal de alta calidad (mínimo 1920x1080px)."
+              previewHeight="h-64"
+              testIdPrefix="hero"
+            />
+            <ImageSettingCard
+              settingKey="about_image"
+              title="Imagen Sobre Nosotros"
+              description="Personaliza la imagen que aparece en la sección 'Sobre Nosotros'. Recomendado: foto de los fotógrafos o trabajo emblemático."
+              previewHeight="h-64"
+              testIdPrefix="about"
+            />
           </div>
         )}
 

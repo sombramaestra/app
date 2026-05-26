@@ -50,11 +50,13 @@ const CartSidebar = () => {
                     className="flex gap-4 bg-[#252129] p-4 border border-white/5"
                     data-testid={`cart-item-${item.id}`}
                   >
-                    <img
-                      src={`${process.env.REACT_APP_BACKEND_URL}${item.photo_image}`}
-                      alt={item.photo_title}
-                      className="w-20 h-20 object-cover"
-                    />
+                    <div className="w-20 h-20 bg-[#0C0A0D] flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img
+                        src={`${process.env.REACT_APP_BACKEND_URL}${item.photo_image}`}
+                        alt={item.photo_title}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </div>
                     <div className="flex-1">
                       <h3 className="text-sm font-medium mb-1">{item.photo_title}</h3>
                       <p className="text-xs text-[#AFA8B3] mb-2">{item.format_type}</p>

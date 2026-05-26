@@ -595,47 +595,60 @@ async def delete_photo(photo_id: str, user: dict = Depends(get_current_user)):
     
     return {"message": "Photo deleted successfully"}
 
-# Site Settings endpoints (hero image, etc.)
+# Site Settings endpoints (hero image, about image, etc.)
 DEFAULT_HERO_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png"
+DEFAULT_ABOUT_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png"
 
-@api_router.get("/settings/hero")
-async def get_hero_image():
-    setting = await db.settings.find_one({"key": "hero_image"}, {"_id": 0})
+SETTING_DEFAULTS = {
+    "hero_image": DEFAULT_HERO_URL,
+    "about_image": DEFAULT_ABOUT_URL,
+}
+
+@api_router.get("/settings/{key}")
+async def get_setting_image(key: str):
+    if key not in SETTING_DEFAULTS:
+        raise HTTPException(status_code=404, detail="Setting not found")
+    setting = await db.settings.find_one({"key": key}, {"_id": 0})
     if not setting:
-        return {"url": DEFAULT_HERO_URL, "is_custom": False}
+        return {"url": SETTING_DEFAULTS[key], "is_custom": False}
     return {
-        "url": f"/api/settings/hero/image?v={setting.get('updated_at', '')}",
+        "url": f"/api/settings/{key}/image?v={setting.get('updated_at', '')}",
         "is_custom": True
     }
 
-@api_router.get("/settings/hero/image")
-async def get_hero_image_file(v: Optional[str] = None):
-    setting = await db.settings.find_one({"key": "hero_image"})
+@api_router.get("/settings/{key}/image")
+async def get_setting_image_file(key: str, v: Optional[str] = None):
+    if key not in SETTING_DEFAULTS:
+        raise HTTPException(status_code=404, detail="Setting not found")
+    setting = await db.settings.find_one({"key": key})
     if not setting or not setting.get("storage_path"):
-        raise HTTPException(status_code=404, detail="Hero image not found")
+        raise HTTPException(status_code=404, detail="Image not found")
     
     data, content_type = get_object(setting["storage_path"])
     return Response(content=data, media_type=content_type)
 
-@api_router.post("/settings/hero")
-async def upload_hero_image(
+@api_router.post("/settings/{key}")
+async def upload_setting_image(
+    key: str,
     file: UploadFile = File(...),
     user: dict = Depends(get_current_user)
 ):
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    if key not in SETTING_DEFAULTS:
+        raise HTTPException(status_code=404, detail="Setting not found")
     
     ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    storage_path = f"{APP_NAME}/settings/hero_{uuid.uuid4()}.{ext}"
+    storage_path = f"{APP_NAME}/settings/{key}_{uuid.uuid4()}.{ext}"
     
     data = await file.read()
     result = put_object(storage_path, data, file.content_type or "image/jpeg")
     
     now = datetime.now(timezone.utc).isoformat()
     await db.settings.update_one(
-        {"key": "hero_image"},
+        {"key": key},
         {"$set": {
-            "key": "hero_image",
+            "key": key,
             "storage_path": result["path"],
             "original_filename": file.filename,
             "content_type": file.content_type or "image/jpeg",
@@ -644,15 +657,17 @@ async def upload_hero_image(
         upsert=True
     )
     
-    return {"url": f"/api/settings/hero/image?v={now}", "is_custom": True}
+    return {"url": f"/api/settings/{key}/image?v={now}", "is_custom": True}
 
-@api_router.delete("/settings/hero")
-async def reset_hero_image(user: dict = Depends(get_current_user)):
+@api_router.delete("/settings/{key}")
+async def reset_setting_image(key: str, user: dict = Depends(get_current_user)):
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    if key not in SETTING_DEFAULTS:
+        raise HTTPException(status_code=404, detail="Setting not found")
     
-    await db.settings.delete_one({"key": "hero_image"})
-    return {"url": DEFAULT_HERO_URL, "is_custom": False}
+    await db.settings.delete_one({"key": key})
+    return {"url": SETTING_DEFAULTS[key], "is_custom": False}
 
 # Events endpoints (Admin calendar)
 @api_router.get("/events", response_model=List[EventResponse])

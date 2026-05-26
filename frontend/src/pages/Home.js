@@ -8,9 +8,10 @@ const DEFAULT_HERO = 'https://static.prod-images.emergentagent.com/jobs/b5da26db
 
 const Home = () => {
   const [heroUrl, setHeroUrl] = useState(DEFAULT_HERO);
+  const [heroLoaded, setHeroLoaded] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API}/settings/hero`).then(({ data }) => {
+    axios.get(`${API}/settings/hero_image`).then(({ data }) => {
       if (data.is_custom) {
         setHeroUrl(`${process.env.REACT_APP_BACKEND_URL}${data.url}`);
       } else {
@@ -19,16 +20,26 @@ const Home = () => {
     }).catch(() => setHeroUrl(DEFAULT_HERO));
   }, []);
 
+  // Preload hero to trigger fade-in
+  useEffect(() => {
+    if (!heroUrl) return;
+    setHeroLoaded(false);
+    const img = new Image();
+    img.onload = () => setHeroLoaded(true);
+    img.src = heroUrl;
+  }, [heroUrl]);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center" data-testid="hero-section">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden" data-testid="hero-section">
         <div
-          className="absolute inset-0 z-0"
+          className={`absolute inset-0 z-0 transition-opacity duration-1000 ${heroLoaded ? 'opacity-100' : 'opacity-0'}`}
           style={{
             backgroundImage: `url(${heroUrl})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center center',
+            backgroundRepeat: 'no-repeat',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-[#0C0A0D]"></div>

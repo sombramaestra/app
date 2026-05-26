@@ -369,16 +369,20 @@ const Gallery = () => {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedPhoto(null)}>
             <div
-              className="bg-[#1A171D] border border-white/10 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-[#1A171D] border border-white/10 max-w-5xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
               data-testid="photo-modal"
             >
-              <ProtectedImage
-                src={`${process.env.REACT_APP_BACKEND_URL}${selectedPhoto.image_url}`}
-                alt={selectedPhoto.title}
-                className="w-full h-auto aspect-[4/3]"
-                watermarkSize="lg"
-              />
+              <div className="bg-[#0C0A0D] flex items-center justify-center" style={{ maxHeight: '70vh', minHeight: '300px' }}>
+                <ProtectedImage
+                  src={`${process.env.REACT_APP_BACKEND_URL}${selectedPhoto.image_url}`}
+                  alt={selectedPhoto.title}
+                  className="w-full"
+                  watermarkSize="lg"
+                  fit="contain"
+                  style={{ height: '70vh' }}
+                />
+              </div>
               <div className="p-8">
                 <h2 className="text-3xl md:text-4xl tracking-tight font-normal mb-4">{selectedPhoto.title}</h2>
                 {selectedPhoto.description && (
