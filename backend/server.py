@@ -311,10 +311,14 @@ async def seed_admin():
         f.write("- POST /api/auth/logout\n")
 
 async def seed_categories():
+    # Remove unwanted categories
+    await db.categories.delete_one({"slug": "asociaciones-civiles"})
+
     default_categories = [
         {"id": str(uuid.uuid4()), "name": "Hermandades", "slug": "hermandades"},
         {"id": str(uuid.uuid4()), "name": "Eventos", "slug": "eventos"},
         {"id": str(uuid.uuid4()), "name": "Pueblos de Sevilla", "slug": "pueblos"},
+        {"id": str(uuid.uuid4()), "name": "Bandas", "slug": "bandas"},
     ]
     
     for cat in default_categories:
@@ -667,6 +671,44 @@ SETTING_DEFAULTS = {
     "about_image": DEFAULT_ABOUT_URL,
 }
 
+@api_router.get("/featured")
+async def get_featured():
+    doc = await db.settings.find_one({"key": "featured_photos"}, {"_id": 0})
+    if not doc or not doc.get("photo_ids"):
+        return []
+    ids = doc["photo_ids"][:3]
+    photos = []
+    for pid in ids:
+        p = await db.photos.find_one({"id": pid, "is_deleted": False}, {"_id": 0})
+        if p:
+            photos.append({
+                "id": p["id"],
+                "title": p["title"],
+                "description": p.get("description"),
+                "category": p["category"],
+                "subcategory": p.get("subcategory"),
+                "hermandad": p.get("hermandad"),
+                "price_digital": p["price_digital"],
+                "price_physical": p["price_physical"],
+                "image_url": f"/api/photos/{p['id']}/image",
+                "thumb_url": f"/api/photos/{p['id']}/thumb",
+                "created_at": p["created_at"],
+            })
+    return photos
+
+@api_router.post("/featured")
+async def set_featured(data: dict, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    photo_ids = data.get("photo_ids", [])[:3]
+    await db.settings.update_one(
+        {"key": "featured_photos"},
+        {"$set": {"key": "featured_photos", "photo_ids": photo_ids}},
+        upsert=True
+    )
+    return {"photo_ids": photo_ids}
+
+
 @api_router.get("/settings/{key}")
 async def get_setting_image(key: str):
     if key not in SETTING_DEFAULTS:
@@ -788,6 +830,16 @@ async def create_category(name: str, slug: str, user: dict = Depends(get_current
     category = {"id": cat_id, "name": name, "slug": slug}
     await db.categories.insert_one(category)
     return CategoryResponse(id=cat_id, name=name, slug=slug)
+
+
+@api_router.delete("/categories/{slug}")
+async def delete_category(slug: str, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    result = await db.categories.delete_one({"slug": slug})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return {"message": f"Category deleted successfully"}
 
 # Orders endpoints
 @api_router.post("/orders", response_model=OrderResponse)

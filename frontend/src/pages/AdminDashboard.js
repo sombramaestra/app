@@ -30,6 +30,9 @@ const AdminDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [featuredIds, setFeaturedIds] = useState(['', '', '']);
+  const [featuredSaving, setFeaturedSaving] = useState(false);
+  const [featuredSuccess, setFeaturedSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -55,6 +58,7 @@ const AdminDashboard = () => {
       fetchCategories();
       fetchOrders();
       fetchPhotos();
+      fetchFeatured();
     }
   }, [user]);
 
@@ -82,6 +86,30 @@ const AdminDashboard = () => {
       setPhotos(data);
     } catch (error) {
       console.error('Error fetching photos:', error);
+    }
+  };
+
+  const fetchFeatured = async () => {
+    try {
+      const { data } = await axios.get(`${API}/featured`);
+      const ids = data.map(p => p.id);
+      setFeaturedIds([ids[0] || '', ids[1] || '', ids[2] || '']);
+    } catch (error) {
+      console.error('Error fetching featured:', error);
+    }
+  };
+
+  const handleSaveFeatured = async () => {
+    setFeaturedSaving(true);
+    try {
+      const ids = featuredIds.filter(id => id !== '');
+      await axios.post(`${API}/featured`, { photo_ids: ids }, { withCredentials: true });
+      setFeaturedSuccess(true);
+      setTimeout(() => setFeaturedSuccess(false), 3000);
+    } catch (error) {
+      toast.error('Error al guardar destacados');
+    } finally {
+      setFeaturedSaving(false);
     }
   };
 
@@ -632,6 +660,61 @@ const AdminDashboard = () => {
               previewHeight="h-64"
               testIdPrefix="about"
             />
+
+            {/* Fotografías Destacadas */}
+            <div className="bg-[#1A171D] border border-white/5 p-8">
+              <h2 className="text-lg font-medium mb-2">Fotografías Destacadas</h2>
+              <p className="text-[#AFA8B3] text-sm mb-8">
+                Selecciona hasta 3 fotografías que aparecerán destacadas en la galería cuando no haya filtros activos.
+              </p>
+              <div className="space-y-6">
+                {[0, 1, 2].map((i) => {
+                  const selected = photos.find(p => p.id === featuredIds[i]);
+                  return (
+                    <div key={i} className="border border-[#2C2631] p-4">
+                      <label className="block text-sm font-medium mb-3 text-[#AFA8B3]">
+                        Destacada {i + 1}
+                      </label>
+                      <select
+                        value={featuredIds[i]}
+                        onChange={(e) => {
+                          const newIds = [...featuredIds];
+                          newIds[i] = e.target.value;
+                          setFeaturedIds(newIds);
+                        }}
+                        className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0] mb-3"
+                      >
+                        <option value="">— Sin seleccionar —</option>
+                        {photos.map(p => (
+                          <option key={p.id} value={p.id}>{p.title}</option>
+                        ))}
+                      </select>
+                      {selected && (
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={selected.thumb_url || selected.image_url}
+                            alt={selected.title}
+                            className="w-20 h-20 object-cover border border-[#2C2631]"
+                          />
+                          <div className="text-sm text-[#AFA8B3]">
+                            <p className="text-[#F8F7F9] font-medium">{selected.title}</p>
+                            <p>{selected.subcategory || selected.category}</p>
+                            {selected.hermandad && <p>{selected.hermandad}</p>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                onClick={handleSaveFeatured}
+                disabled={featuredSaving}
+                className="mt-8 w-full bg-[#522A4E] text-[#F8F7F9] py-3 px-6 hover:bg-[#6B3868] transition-colors disabled:opacity-50"
+              >
+                {featuredSaving ? 'Guardando...' : featuredSuccess ? '✓ Guardado' : 'Guardar Destacados'}
+              </button>
+            </div>
           </div>
         )}
 

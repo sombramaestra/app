@@ -12,6 +12,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const Gallery = () => {
   const [photos, setPhotos] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [featured, setFeatured] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedHermandad, setSelectedHermandad] = useState(null);
@@ -27,6 +28,7 @@ const Gallery = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchFeatured();
   }, []);
 
   // Debounce search
@@ -45,6 +47,15 @@ const Gallery = () => {
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchFeatured = async () => {
+    try {
+      const { data } = await axios.get(`${API}/featured`);
+      setFeatured(data);
+    } catch (error) {
+      console.error('Error fetching featured:', error);
     }
   };
 
@@ -145,7 +156,7 @@ const Gallery = () => {
           >
             Todas
           </button>
-          {categories.filter(c => c.slug !== 'asociaciones-civiles').map((category) => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategoryChange(category.slug)}
@@ -318,45 +329,84 @@ const Gallery = () => {
           </div>
         )}
 
+        {/* Sección Destacados — solo sin filtros activos */}
+        {!hasActiveFilters && featured.length > 0 && (
+          <div className="mb-16" data-testid="featured-section">
+            <h2 className="text-xs tracking-[0.3em] uppercase text-[#AFA8B3] mb-8">Destacados</h2>
+            <div className={`grid gap-4 ${
+              featured.length === 1 ? 'grid-cols-1' :
+              featured.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+              'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {featured.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="group cursor-pointer relative overflow-hidden bg-[#1A171D] border border-white/5"
+                  onClick={() => setSelectedPhoto(photo)}
+                  data-testid={`featured-card-${photo.id}`}
+                >
+                  <img
+                    src={photo.image_url}
+                    alt={photo.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    style={{ maxHeight: '520px' }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                    <p className="text-[#F8F7F9] font-medium text-sm">{photo.title}</p>
+                    {photo.hermandad && <p className="text-[#AFA8B3] text-xs mt-1">{photo.hermandad}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="border-b border-white/5 mt-16 mb-16" />
+          </div>
+        )}
+
         {/* Gallery Grid */}
         {loading ? (
           <div className="text-center py-20" data-testid="gallery-loading">
             <p className="text-[#AFA8B3]">Cargando fotografías...</p>
           </div>
-        ) : photos.length === 0 ? (
-          <div className="text-center py-20" data-testid="gallery-empty">
-            <p className="text-[#AFA8B3]">No hay fotografías disponibles con estos filtros.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="gallery-grid">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className="group cursor-pointer"
-                onClick={() => setSelectedPhoto(photo)}
-                data-testid={`photo-card-${photo.id}`}
-              >
-                <div className="relative overflow-hidden bg-[#1A171D] border border-white/5 aspect-[3/4]">
-                  <ProtectedImage
-                    src={`${process.env.REACT_APP_BACKEND_URL}${photo.thumb_url || photo.image_url}`}
-                    alt={photo.title}
-                    className="w-full h-full group-hover:scale-105 transition-transform duration-500"
-                    watermarkSize="md"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <h3 className="text-xl font-medium mb-2">{photo.title}</h3>
-                      {photo.hermandad && (
-                        <p className="text-xs text-[#9C6AB0] mb-1">{photo.hermandad}</p>
-                      )}
-                      <p className="text-sm text-[#AFA8B3]">{photo.category}</p>
+        ) : (() => {
+          const featuredIds = new Set(featured.map(f => f.id));
+          const allPhotos = !hasActiveFilters
+            ? [...featured, ...photos.filter(p => !featuredIds.has(p.id))]
+            : photos;
+          return allPhotos.length === 0 ? (
+            <div className="text-center py-20" data-testid="gallery-empty">
+              <p className="text-[#AFA8B3]">No hay fotografías disponibles con estos filtros.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="gallery-grid">
+              {allPhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="group cursor-pointer"
+                  onClick={() => setSelectedPhoto(photo)}
+                  data-testid={`photo-card-${photo.id}`}
+                >
+                  <div className="relative overflow-hidden bg-[#1A171D] border border-white/5 aspect-[3/4]">
+                    <ProtectedImage
+                      src={`${process.env.REACT_APP_BACKEND_URL}${photo.thumb_url || photo.image_url}`}
+                      alt={photo.title}
+                      className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+                      watermarkSize="md"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      <div className="absolute bottom-0 left-0 right-0 p-6">
+                        <h3 className="text-xl font-medium mb-2">{photo.title}</h3>
+                        {photo.hermandad && (
+                          <p className="text-xs text-[#9C6AB0] mb-1">{photo.hermandad}</p>
+                        )}
+                        <p className="text-sm text-[#AFA8B3]">{photo.category}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Photo Detail Modal */}
