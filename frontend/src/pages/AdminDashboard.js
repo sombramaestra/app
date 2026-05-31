@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar } from 'lucide-react';
+import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar, Pencil } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
 import AdminCalendar from '../components/AdminCalendar';
 import ImageSettingCard from '../components/ImageSettingCard';
@@ -30,9 +30,12 @@ const AdminDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [featuredIds, setFeaturedIds] = useState(['', '', '']);
+  const [featuredIds, setFeaturedIds] = useState(['', '', '', '', '', '', '', '']);
   const [featuredSaving, setFeaturedSaving] = useState(false);
   const [featuredSuccess, setFeaturedSuccess] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -93,7 +96,7 @@ const AdminDashboard = () => {
     try {
       const { data } = await axios.get(`${API}/featured`);
       const ids = data.map(p => p.id);
-      setFeaturedIds([ids[0] || '', ids[1] || '', ids[2] || '']);
+      setFeaturedIds([ids[0]||'', ids[1]||'', ids[2]||'', ids[3]||'', ids[4]||'', ids[5]||'', ids[6]||'', ids[7]||'']);
     } catch (error) {
       console.error('Error fetching featured:', error);
     }
@@ -120,6 +123,21 @@ const AdminDashboard = () => {
       fetchPhotos();
     } catch (error) {
       toast.error('Error al eliminar la fotografía');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPhoto) return;
+    setEditSaving(true);
+    try {
+      await axios.put(`${API}/photos/${editingPhoto.id}`, editForm, { withCredentials: true });
+      toast.success('Fotografía actualizada');
+      setEditingPhoto(null);
+      fetchPhotos();
+    } catch (error) {
+      toast.error('Error al guardar cambios');
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -597,10 +615,17 @@ const AdminDashboard = () => {
                         className="max-w-full max-h-full object-contain"
                       />
                     </div>
+                    <button
+                      onClick={() => { setEditingPhoto(photo); setEditForm({ title: photo.title, description: photo.description || '', category: photo.category, subcategory: photo.subcategory || '', hermandad: photo.hermandad || '', price_digital: photo.price_digital, price_physical: photo.price_physical }); }}
+                      className="absolute top-2 left-2 bg-[#522A4E] hover:bg-[#9C6AB0] text-white p-2 rounded-full transition-colors"
+                      aria-label="Editar fotografía"
+                    >
+                      <Pencil size={16} />
+                    </button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <button
-                          className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-2 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                          className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-2 rounded-full transition-colors"
                           data-testid={`delete-photo-${photo.id}`}
                           aria-label="Eliminar fotografía"
                         >
@@ -643,6 +668,70 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Modal Editar Foto */}
+        {editingPhoto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setEditingPhoto(null)}>
+            <div className="bg-[#1A171D] border border-[#2C2631] p-8 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-medium">Editar fotografía</h2>
+                <button onClick={() => setEditingPhoto(null)} className="text-[#AFA8B3] hover:text-white text-xl">✕</button>
+              </div>
+              <div className="flex gap-4 mb-6">
+                <img
+                  src={`${process.env.REACT_APP_BACKEND_URL}${editingPhoto.thumb_url || editingPhoto.image_url}`}
+                  alt={editingPhoto.title}
+                  className="w-24 h-24 object-cover border border-[#2C2631] flex-shrink-0"
+                />
+                <div className="text-sm text-[#AFA8B3]">
+                  <p className="text-xs uppercase tracking-widest mb-1">Vista previa</p>
+                  <p>{editingPhoto.category}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Título</label>
+                  <input value={editForm.title || ''} onChange={e => setEditForm(f => ({...f, title: e.target.value}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Descripción</label>
+                  <textarea value={editForm.description || ''} onChange={e => setEditForm(f => ({...f, description: e.target.value}))} rows={3} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0] resize-none" />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Categoría</label>
+                  <select value={editForm.category || ''} onChange={e => setEditForm(f => ({...f, category: e.target.value}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]">
+                    <option value="">— Sin categoría —</option>
+                    {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Hermandad</label>
+                  <input value={editForm.hermandad || ''} onChange={e => setEditForm(f => ({...f, hermandad: e.target.value}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Subcategoría</label>
+                  <input value={editForm.subcategory || ''} onChange={e => setEditForm(f => ({...f, subcategory: e.target.value}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Precio digital (€)</label>
+                    <input type="number" step="0.01" value={editForm.price_digital || ''} onChange={e => setEditForm(f => ({...f, price_digital: parseFloat(e.target.value)}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#AFA8B3] uppercase tracking-widest mb-2">Precio físico (€)</label>
+                    <input type="number" step="0.01" value={editForm.price_physical || ''} onChange={e => setEditForm(f => ({...f, price_physical: parseFloat(e.target.value)}))} className="w-full bg-[#252129] border border-[#2C2631] text-[#F8F7F9] px-4 py-3 focus:outline-none focus:border-[#9C6AB0]" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-4 mt-8">
+                <button onClick={() => setEditingPhoto(null)} className="flex-1 border border-[#2C2631] text-[#AFA8B3] py-3 hover:text-white transition-colors">Cancelar</button>
+                <button onClick={handleSaveEdit} disabled={editSaving} className="flex-1 bg-[#522A4E] text-[#F8F7F9] py-3 hover:bg-[#6B3868] transition-colors disabled:opacity-50">
+                  {editSaving ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="max-w-3xl space-y-8" data-testid="settings-section">
@@ -665,10 +754,10 @@ const AdminDashboard = () => {
             <div className="bg-[#1A171D] border border-white/5 p-8">
               <h2 className="text-lg font-medium mb-2">Fotografías Destacadas</h2>
               <p className="text-[#AFA8B3] text-sm mb-8">
-                Selecciona hasta 3 fotografías que aparecerán destacadas en la galería cuando no haya filtros activos.
+                Selecciona hasta 8 fotografías que aparecerán en el carrusel destacado de la galería.
               </p>
               <div className="space-y-6">
-                {[0, 1, 2].map((i) => {
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
                   const selected = photos.find(p => p.id === featuredIds[i]);
                   return (
                     <div key={i} className="border border-[#2C2631] p-4">

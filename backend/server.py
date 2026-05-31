@@ -662,6 +662,22 @@ async def delete_photo(photo_id: str, user: dict = Depends(get_current_user)):
     
     return {"message": "Photo deleted successfully"}
 
+@api_router.put("/photos/{photo_id}")
+async def update_photo(photo_id: str, data: dict, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    allowed = ["title", "description", "category", "subcategory", "hermandad", "comarca", "pueblo", "price_digital", "price_physical"]
+    update = {k: v for k, v in data.items() if k in allowed}
+    if not update:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    result = await db.photos.update_one(
+        {"id": photo_id, "is_deleted": False},
+        {"$set": update}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    return {"message": "Photo updated successfully"}
+
 # Site Settings endpoints (hero image, about image, etc.)
 DEFAULT_HERO_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png"
 DEFAULT_ABOUT_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png"
@@ -676,7 +692,7 @@ async def get_featured():
     doc = await db.settings.find_one({"key": "featured_photos"}, {"_id": 0})
     if not doc or not doc.get("photo_ids"):
         return []
-    ids = doc["photo_ids"][:3]
+    ids = doc["photo_ids"][:8]
     photos = []
     for pid in ids:
         p = await db.photos.find_one({"id": pid, "is_deleted": False}, {"_id": 0})
@@ -700,7 +716,7 @@ async def get_featured():
 async def set_featured(data: dict, user: dict = Depends(get_current_user)):
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
-    photo_ids = data.get("photo_ids", [])[:3]
+    photo_ids = data.get("photo_ids", [])[:8]
     await db.settings.update_one(
         {"key": "featured_photos"},
         {"$set": {"key": "featured_photos", "photo_ids": photo_ids}},

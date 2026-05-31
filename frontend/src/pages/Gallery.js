@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../contexts/CartContext';
 import { toast } from 'sonner';
-import { Search, X, ChevronDown } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
 import ProtectedImage from '../components/ProtectedImage';
 import { PUEBLOS_POR_COMARCA, COMARCAS_SEVILLA, HERMANDADES_POR_PUEBLO } from '../data/pueblos';
@@ -24,6 +24,7 @@ const Gallery = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showHermandadesPanel, setShowHermandadesPanel] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -40,6 +41,15 @@ const Gallery = () => {
   useEffect(() => {
     fetchPhotos();
   }, [selectedCategory, selectedDay, selectedHermandad, selectedComarca, selectedPueblo, selectedHermandadPueblo, debouncedSearch]);
+
+  // Autoplay carrusel destacados
+  useEffect(() => {
+    if (featured.length <= 1) return;
+    const timer = setInterval(() => {
+      setCarouselIndex(i => (i + 1) % Math.min(featured.length, 8));
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [featured.length]);
 
   const fetchCategories = async () => {
     try {
@@ -329,34 +339,68 @@ const Gallery = () => {
           </div>
         )}
 
-        {/* Sección Destacados — solo sin filtros activos */}
+        {/* Sección Destacados — carrusel de 8 fotos */}
         {!hasActiveFilters && featured.length > 0 && (
           <div className="mb-16" data-testid="featured-section">
             <h2 className="text-xs tracking-[0.3em] uppercase text-[#AFA8B3] mb-8">Destacados</h2>
-            <div className={`grid gap-4 ${
-              featured.length === 1 ? 'grid-cols-1' :
-              featured.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
-              'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-            }`}>
-              {featured.map((photo) => (
+            <div className="relative overflow-hidden bg-[#1A171D] border border-white/5" style={{ height: '520px' }}>
+              {featured.slice(0, 8).map((photo, i) => (
                 <div
                   key={photo.id}
-                  className="group cursor-pointer relative overflow-hidden bg-[#1A171D] border border-white/5"
-                  onClick={() => setSelectedPhoto(photo)}
+                  className="absolute inset-0 transition-opacity duration-700"
+                  style={{ opacity: i === carouselIndex ? 1 : 0, zIndex: i === carouselIndex ? 10 : 0 }}
                   data-testid={`featured-card-${photo.id}`}
                 >
-                  <img
-                    src={photo.image_url}
-                    alt={photo.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    style={{ maxHeight: '520px' }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                    <p className="text-[#F8F7F9] font-medium text-sm">{photo.title}</p>
-                    {photo.hermandad && <p className="text-[#AFA8B3] text-xs mt-1">{photo.hermandad}</p>}
+                  <div
+                    className="group cursor-pointer w-full h-full"
+                    onClick={() => setSelectedPhoto(photo)}
+                  >
+                    <img
+                      src={`${process.env.REACT_APP_BACKEND_URL}${photo.thumb_url || photo.image_url}`}
+                      alt={photo.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-8">
+                      <p className="text-[#F8F7F9] font-medium text-lg">{photo.title}</p>
+                      {photo.hermandad && <p className="text-[#AFA8B3] text-sm mt-1">{photo.hermandad}</p>}
+                    </div>
                   </div>
                 </div>
               ))}
+              {featured.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCarouselIndex(i => (i - 1 + Math.min(featured.length, 8)) % Math.min(featured.length, 8))}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/80 border border-white/10 text-white p-2 transition-colors duration-200"
+                    style={{ transform: 'translateY(-50%)' }}
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button
+                    onClick={() => setCarouselIndex(i => (i + 1) % Math.min(featured.length, 8))}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/50 hover:bg-black/80 border border-white/10 text-white p-2 transition-colors duration-200"
+                    style={{ transform: 'translateY(-50%)' }}
+                    aria-label="Siguiente"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                  <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
+                    {featured.slice(0, 8).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCarouselIndex(i)}
+                        className="h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: i === carouselIndex ? '16px' : '8px',
+                          backgroundColor: i === carouselIndex ? '#9C6AB0' : 'rgba(255,255,255,0.3)'
+                        }}
+                        aria-label={`Ir a foto ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
             <div className="border-b border-white/5 mt-16 mb-16" />
           </div>
