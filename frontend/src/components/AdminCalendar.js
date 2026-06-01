@@ -25,6 +25,7 @@ const WEEKDAYS_ES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const PHOTOGRAPHER_COLORS = {
   gonzalo: { bg: '#9C6AB0', label: 'Gonzalo' },
   manuel: { bg: '#5B7B9A', label: 'Manuel' },
+  alvaro: { bg: '#7A9A5B', label: 'Álvaro' },
 };
 
 const formatDate = (date) => {
@@ -228,6 +229,10 @@ const AdminCalendar = () => {
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHOTOGRAPHER_COLORS.manuel.bg }} />
             <span className="text-[#AFA8B3]">Manuel</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#7A9A5B' }}></div>
+              <span className="text-[#AFA8B3]">Álvaro</span>
           </div>
         </div>
       </div>
@@ -305,6 +310,7 @@ const AdminCalendar = () => {
             >
               <option value="gonzalo">Gonzalo</option>
               <option value="manuel">Manuel</option>
+              <option value="alvaro">Álvaro</option>
             </select>
             <button
               type="submit"

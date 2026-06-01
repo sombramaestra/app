@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar, Pencil } from 'lucide-react';
+import { Upload, Package, Image as ImageIcon, Trash2, Settings, Calendar, Pencil, Clock } from 'lucide-react';
 import { HERMANDADES_POR_DIA, DIAS_SEMANA_SANTA } from '../data/hermandades';
 import AdminCalendar from '../components/AdminCalendar';
 import ImageSettingCard from '../components/ImageSettingCard';
@@ -34,6 +34,17 @@ const AdminDashboard = () => {
   const [featuredSaving, setFeaturedSaving] = useState(false);
   const [featuredSuccess, setFeaturedSuccess] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState(null);
+  const [availability, setAvailability] = useState({
+    lunes:     { manana: true,  tarde: true },
+    martes:    { manana: true,  tarde: true },
+    miercoles: { manana: true,  tarde: true },
+    jueves:    { manana: true,  tarde: true },
+    viernes:   { manana: true,  tarde: true },
+    sabado:    { manana: true,  tarde: true },
+    domingo:   { manana: true,  tarde: true },
+  });
+  const [availSaving, setAvailSaving] = useState(false);
+  const [availLoaded, setAvailLoaded] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
 
@@ -62,6 +73,7 @@ const AdminDashboard = () => {
       fetchOrders();
       fetchPhotos();
       fetchFeatured();
+    fetchAvailability();
     }
   }, [user]);
 
@@ -126,7 +138,142 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleSaveEdit = async () => {
+  const fetchAvailability = async () => {
+    try {
+      const { data } = await axios.get(`${API}/settings/availability`, { withCredentials: true });
+      if (data && data.value) setAvailability(data.value);
+    } catch {}
+    setAvailLoaded(true);
+  };
+
+  const saveAvailability = async () => {
+    setAvailSaving(true);
+    try {
+      await axios.post(`${API}/settings/availability`, { value: availability }, { withCredentials: true });
+      toast.success('Disponibilidad guardada');
+    } catch {
+      toast.error('Error al guardar');
+    } finally {
+      setAvailSaving(false);
+    }
+  };
+
+  const generateAvailabilityImage = (avail) => {
+    const DAYS = [
+      { key: 'lunes',     label: 'Lunes' },
+      { key: 'martes',    label: 'Martes' },
+      { key: 'miercoles', label: 'Miércoles' },
+      { key: 'jueves',    label: 'Jueves' },
+      { key: 'viernes',   label: 'Viernes' },
+      { key: 'sabado',    label: 'Sábado' },
+      { key: 'domingo',   label: 'Domingo' },
+    ];
+    const NAMES = { gonzalo: 'GONZALO LARA', manuel: 'MANUEL GÓMEZ', alvaro: 'ÁLVARO OJEDA' };
+    const phKey = avail._photographer || 'gonzalo';
+    const phName = NAMES[phKey];
+
+    const W = 1080, H = 1350;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const PAD_L = 72, PAD_R = 72, GAP = 16;
+    const DAY_W = 200;
+
+    const drawAll = (bg) => {
+      // Fondo
+      if (bg) {
+        ctx.drawImage(bg, 0, 0, W, H);
+        ctx.fillStyle = 'rgba(0,0,0,0.20)';
+        ctx.fillRect(0, 0, W, H);
+      } else {
+        const grad = ctx.createRadialGradient(W*0.8, H*0.9, 0, W*0.8, H*0.9, W*1.1);
+        grad.addColorStop(0, '#7B1FA2');
+        grad.addColorStop(0.4, '#2a004a');
+        grad.addColorStop(1, '#0a000f');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+      }
+
+      const centerText = (text, y, size, color, bold=false) => {
+        ctx.font = `${bold?'600':'300'} ${size}px Georgia, serif`;
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center';
+        ctx.fillText(text, W/2, y);
+      };
+
+      // Cabecera
+      centerText('P A S I O N C O F R A D E', 100, 32, '#C9A8D4');
+      centerText('Disponibilidad', 215, 90, '#F8F7F9', true);
+      centerText(phName, 275, 34, '#9C6AB0');
+      ctx.strokeStyle = '#9C6AB0'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W/2-70, 305); ctx.lineTo(W/2+70, 305); ctx.stroke();
+
+      // Días
+      const startY = 325;
+      const rowH = (H - startY - 80) / DAYS.length;
+      const boxH = rowH - 18;
+      const slotW = (W - PAD_L - PAD_R - DAY_W - GAP*2) / 2;
+
+      DAYS.forEach(({ key, label }, i) => {
+        const y = startY + i * rowH;
+        const boxY = y + 6;
+        const manana = avail[key]?.manana ?? true;
+        const tarde  = avail[key]?.tarde  ?? true;
+
+        // Nombre día
+        ctx.fillStyle = '#F8F7F9';
+        ctx.font = '600 38px Georgia, serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, PAD_L, boxY + (boxH - 38)/2 + 30);
+
+        [{ available: manana, slotLabel: 'Mañana' }, { available: tarde, slotLabel: 'Tarde' }].forEach(({ available, slotLabel }, j) => {
+          const x = PAD_L + DAY_W + GAP + j * (slotW + GAP);
+
+          // Fondo cuadro
+          ctx.fillStyle = available ? 'rgba(156,106,176,0.18)' : 'rgba(139,32,32,0.14)';
+          ctx.fillRect(x, boxY, slotW, boxH);
+
+          // Borde cuadro
+          ctx.strokeStyle = available ? 'rgba(156,106,176,0.8)' : 'rgba(139,32,32,0.65)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, boxY, slotW, boxH);
+
+          // Texto franja (arriba)
+          ctx.fillStyle = available ? '#D4B8E0' : '#C07070';
+          ctx.font = '600 26px Georgia, serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(slotLabel, x + slotW/2, boxY + 34);
+
+          // Estado (abajo)
+          ctx.fillStyle = available ? '#B89AC8' : '#A05050';
+          ctx.font = '400 22px Georgia, serif';
+          ctx.fillText(available ? 'Disponible' : 'No disponible', x + slotW/2, boxY + boxH - 16);
+        });
+      });
+
+      // Footer
+      ctx.strokeStyle = 'rgba(156,106,176,0.35)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PAD_L, H-78); ctx.lineTo(W-PAD_R, H-78); ctx.stroke();
+      ctx.fillStyle = 'rgba(200,180,210,0.55)';
+      ctx.font = '300 24px Georgia, serif'; ctx.textAlign = 'center';
+      ctx.fillText('pasioncofrade.com  ·  Sevilla', W/2, H-46);
+
+      // Descargar
+      const link = document.createElement('a');
+      link.download = `disponibilidad_${phKey}.jpg`;
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    };
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/plantilla_rrss.jpg';
+    img.onload = () => drawAll(img);
+    img.onerror = () => drawAll(null);
+  };
+
+    const handleSaveEdit = async () => {
     if (!editingPhoto) return;
     setEditSaving(true);
     try {
@@ -285,6 +432,17 @@ const AdminDashboard = () => {
           >
             <Calendar size={20} className="inline mr-2" />
             Calendario
+          </button>
+          <button
+            onClick={() => setActiveTab('availability')}
+            className={`pb-4 px-2 transition-colors duration-200 ${
+              activeTab === 'availability'
+                ? 'border-b-2 border-[#522A4E] text-[#F8F7F9]'
+                : 'text-[#AFA8B3] hover:text-[#F8F7F9]'
+            }`}
+          >
+            <Clock size={20} className="inline mr-2" />
+            Disponibilidad
           </button>
         </div>
 
@@ -810,6 +968,99 @@ const AdminDashboard = () => {
         {/* Calendar Tab */}
         {activeTab === 'calendar' && (
           <AdminCalendar />
+        )}
+
+        {/* Availability Tab */}
+        {activeTab === 'availability' && (
+          <div className="max-w-2xl space-y-6">
+            <div>
+              <h2 className="text-lg font-medium mb-1">Disponibilidad semanal</h2>
+              <p className="text-sm text-[#AFA8B3]">Rellena la disponibilidad, guárdala y descarga la imagen lista para subir a RRSS.</p>
+            </div>
+
+            {/* Photographer selector */}
+            <div className="bg-[#1A171D] border border-[#2C2631] p-5">
+              <p className="text-xs uppercase tracking-widest text-[#AFA8B3] mb-3">Fotógrafo</p>
+              <div className="flex gap-3">
+                {[
+                  { key: 'gonzalo', label: 'Gonzalo Lara' },
+                  { key: 'manuel',  label: 'Manuel Gómez' },
+                  { key: 'alvaro',  label: 'Álvaro Ojeda' },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setAvailability(prev => ({ ...prev, _photographer: key }))}
+                    className={`flex-1 py-3 border text-sm transition-all duration-200 ${
+                      (availability._photographer || 'gonzalo') === key
+                        ? 'border-[#9C6AB0] bg-[#9C6AB0]/10 text-[#F8F7F9]'
+                        : 'border-[#2C2631] bg-[#252129] text-[#AFA8B3]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Days */}
+            {[
+              { key: 'lunes',     label: 'Lunes' },
+              { key: 'martes',    label: 'Martes' },
+              { key: 'miercoles', label: 'Miércoles' },
+              { key: 'jueves',    label: 'Jueves' },
+              { key: 'viernes',   label: 'Viernes' },
+              { key: 'sabado',    label: 'Sábado' },
+              { key: 'domingo',   label: 'Domingo' },
+            ].map(({ key, label }) => (
+              <div key={key} className="bg-[#1A171D] border border-[#2C2631] p-5">
+                <p className="text-xs font-medium text-[#F8F7F9] mb-4 uppercase tracking-widest">{label}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { slot: 'manana', slotLabel: 'Mañana', sub: '08:00 – 14:00' },
+                    { slot: 'tarde',  slotLabel: 'Tarde',  sub: '16:00 – 21:00' },
+                  ].map(({ slot, slotLabel, sub }) => {
+                    const active = availability[key]?.[slot] ?? true;
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setAvailability(prev => ({
+                          ...prev,
+                          [key]: { ...(prev[key] || {}), [slot]: !active }
+                        }))}
+                        className={`flex flex-col items-center justify-center py-4 border transition-all duration-200 ${
+                          active
+                            ? 'border-[#9C6AB0] bg-[#9C6AB0]/10 text-[#F8F7F9]'
+                            : 'border-[#2C2631] bg-[#252129] text-[#AFA8B3]'
+                        }`}
+                      >
+                        <span className="font-medium text-sm">{slotLabel}</span>
+                        <span className="text-xs mt-1 opacity-70">{sub}</span>
+                        <span className={`text-xs mt-2 font-semibold ${active ? 'text-[#9C6AB0]' : 'text-red-400'}`}>
+                          {active ? '✓ Disponible' : '✗ No disponible'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            <div className="flex gap-4">
+              <button
+                onClick={saveAvailability}
+                disabled={availSaving}
+                className="flex-1 bg-[#522A4E] hover:bg-[#6B3868] text-[#F8F7F9] py-4 transition-colors disabled:opacity-50"
+              >
+                {availSaving ? 'Guardando...' : 'Guardar disponibilidad'}
+              </button>
+              <button
+                onClick={() => generateAvailabilityImage(availability)}
+                className="flex-1 border border-[#9C6AB0] text-[#9C6AB0] hover:bg-[#9C6AB0]/10 py-4 transition-colors"
+              >
+                Descargar imagen RRSS
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

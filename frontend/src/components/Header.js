@@ -22,7 +22,7 @@ const Header = () => {
       <div className="px-6 md:px-12 lg:px-24 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center" data-testid="logo-link">
-            <h1 className="text-2xl md:text-3xl font-light tracking-tighter text-[#F8F7F9]">PasionCofrade</h1>
+            <img src="/logo.png" alt="PasionCofrade" className="h-12 w-12 md:h-14 md:w-14 object-cover rounded-full" />
           </Link>
 
           {/* Desktop Navigation */}

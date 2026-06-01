@@ -39,7 +39,7 @@ const About = () => {
             <div className="relative w-full bg-[#0C0A0D] border border-white/5 overflow-hidden flex items-center justify-center" style={{ minHeight: '400px', maxHeight: '70vh' }}>
               <img
                 src={aboutUrl}
-                alt="Gonzalo Lara y Manuel Gómez"
+                alt="Gonzalo Lara, Manuel Gómez y Álvaro Ojeda"
                 className={`w-full h-auto max-h-[70vh] object-contain transition-opacity duration-700 ${aboutLoaded ? 'opacity-100' : 'opacity-0'}`}
                 data-testid="about-photo"
                 onLoad={() => setAboutLoaded(true)}
@@ -55,10 +55,10 @@ const About = () => {
                 PasionCofrade
               </h2>
               <p className="text-base leading-relaxed text-[#AFA8B3] mb-6">
-                Somos dos fotógrafos apasionados por la Semana Santa y los eventos cofrades de Sevilla y sus pueblos. Con años de experiencia capturando los momentos más emotivos y significativos de estas celebraciones, nos dedicamos a preservar la belleza y la devoción de estas tradiciones.
+                Somos tres fotógrafos apasionados por la Semana Santa y los eventos cofrades de Sevilla y su provincia. Con años de experiencia capturando los momentos más emotivos y significativos de estas celebraciones, trabajamos para preservar la belleza, la devoción y la esencia de nuestras tradiciones.
               </p>
               <p className="text-base leading-relaxed text-[#AFA8B3]">
-                Nuestro trabajo no solo documenta eventos, sino que cuenta historias a través de imágenes que transmiten la pasión y el fervor de nuestra tierra.
+                Nuestro objetivo no es solo documentar eventos, sino también contar historias a través de imágenes que transmitan la pasión, el sentimiento y el fervor que hacen única a nuestra tierra. Cada fotografía es una forma de acercar al espectador a la emoción de un instante irrepetible.
               </p>
             </div>
             <div>
@@ -95,7 +95,7 @@ const About = () => {
           </div>
 
           {/* Photographers */}
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-[#1A171D] border border-white/5 p-8" data-testid="photographer-card-gonzalo">
               <h3 className="text-2xl font-medium mb-4">Gonzalo Lara</h3>
               <p className="text-base leading-relaxed text-[#AFA8B3] mb-6">
@@ -162,6 +162,31 @@ const About = () => {
                 >
                   <Phone size={18} />
                   <span>687 836 768</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-[#1A171D] border border-white/5 p-8" data-testid="photographer-card-alvaro">
+              <h3 className="text-2xl font-medium mb-4">Álvaro Ojeda</h3>
+              <p className="text-base leading-relaxed text-[#AFA8B3] mb-6">
+                Fotógrafo cofrade apasionado por capturar la esencia de la Semana Santa y las tradiciones de nuestra tierra. A través de cada imagen busca inmortalizar emociones, detalles y momentos únicos que hacen inolvidable cada celebración. Su objetivo es contar historias que transmitan devoción, sentimiento y pasión por el mundo cofrade.
+              </p>
+              <div className="space-y-3">
+                <a
+                  href="https://instagram.com/a.ojeda_fotografia"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[#9C6AB0] hover:text-[#F8F7F9] transition-colors duration-200"
+                >
+                  <Instagram size={18} />
+                  <span>@a.ojeda_fotografia</span>
+                </a>
+                <a
+                  href="tel:+34622916721"
+                  className="flex items-center gap-2 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+                >
+                  <Phone size={18} />
+                  <span>622 916 721</span>
                 </a>
               </div>
             </div>

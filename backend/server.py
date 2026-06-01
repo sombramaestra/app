@@ -310,6 +310,24 @@ async def seed_admin():
         f.write("- GET /api/auth/me\n")
         f.write("- POST /api/auth/logout\n")
 
+async def seed_alvaro():
+    alvaro_email = os.environ.get("ALVARO_EMAIL", "alvaro@pasioncofrade.com")  # Cambiar cuando se tenga el email
+    alvaro_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    existing = await db.users.find_one({"email": alvaro_email})
+    if existing is None:
+        hashed = hash_password(alvaro_password)
+        await db.users.insert_one({
+            "user_id": f"admin_{uuid.uuid4().hex[:12]}",
+            "email": alvaro_email,
+            "password_hash": hashed,
+            "name": "Álvaro Ojeda",
+            "phone": "622916721",
+            "role": "admin",
+            "auth_provider": "email",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        logging.info("Usuario Álvaro Ojeda creado")
+
 async def seed_categories():
     # Remove unwanted categories
     await db.categories.delete_one({"slug": "asociaciones-civiles"})
@@ -678,6 +696,24 @@ async def update_photo(photo_id: str, data: dict, user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Photo not found")
     return {"message": "Photo updated successfully"}
 
+@api_router.get("/settings/availability")
+async def get_availability():
+    doc = await db.settings.find_one({"key": "availability"}, {"_id": 0})
+    if not doc:
+        return {"value": None}
+    return {"value": doc.get("value")}
+
+@api_router.post("/settings/availability")
+async def set_availability(data: dict, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await db.settings.update_one(
+        {"key": "availability"},
+        {"$set": {"key": "availability", "value": data.get("value")}},
+        upsert=True
+    )
+    return {"message": "Availability saved"}
+
 # Site Settings endpoints (hero image, about image, etc.)
 DEFAULT_HERO_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/daf358add6815190f33c82769320d747986a92b41c4bbe6f08c5a460a345eec5.png"
 DEFAULT_ABOUT_URL = "https://static.prod-images.emergentagent.com/jobs/b5da26db-13e2-4e17-8f3f-c11ef203eca3/images/496a1dd0cf44431a6b4ea01e7b53287e1bbc2b54d62e8ce3fe8e7a2a37e7c1bd.png"
@@ -997,6 +1033,7 @@ async def startup():
         logger.error(f"Storage init failed: {e}")
     
     await seed_admin()
+    await seed_alvaro()
     await seed_categories()
     
     # Create indexes

@@ -38,6 +38,15 @@ const Footer = () => {
                 <Instagram size={20} />
                 <span>Manuel Gómez (@_manugfotos)</span>
               </a>
+              <a
+                href="https://instagram.com/a.ojeda_fotografia"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200"
+              >
+                <Instagram size={20} />
+                <span>Álvaro Ojeda (@a.ojeda_fotografia)</span>
+              </a>
             </div>
           </div>
 
@@ -60,6 +69,10 @@ const Footer = () => {
               <a href="tel:+34687836768" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
                 <Phone size={20} />
                 <span>687 836 768 (Manuel)</span>
+              </a>
+              <a href="tel:+34622916721" className="flex items-center gap-3 text-[#AFA8B3] hover:text-[#F8F7F9] transition-colors duration-200">
+                <Phone size={20} />
+                <span>622 916 721 (Álvaro)</span>
               </a>
             </div>
           </div>
